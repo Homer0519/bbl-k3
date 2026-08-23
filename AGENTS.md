@@ -19,6 +19,8 @@
 
 **单一事实源约定**：`prompts-default.json`（根目录）为默认提示词唯一来源，server.js 启动时读取，APK 资产由 `npm run cap:sync` 复制同步（单测校验两份一致防漂移）；世界书同理（`worldbook/` → `public/worldbook/`）。
 
+**APK 验证方式**（无模拟器/真机时）：`npm run mock` + `node test/cap-sim-server.js` 起模拟环境（静态托管 public/ + 注入 `window.Capacitor` 桩 + `/llm-proxy` 模拟原生网络），浏览器开 `http://127.0.0.1:3300` 即为 APK 同款代码路径；`npm run test:native` 对 native.js 本地 API 做 20 项确定性验证（配置/资产/LLM 非流式/模拟 SSE/存档快照/白名单）。APK 产物：`dist/篮球人生-debug.apk`（Actions 构建后下载），仓库 `Homer0519/bbl-basketball-life`（public，推送自动重建）。详见 `APK-BUILD.md`。
+
 ---
 
 ## 开发命令
@@ -29,9 +31,10 @@
 | `npm install` | 安装依赖（仅 express） |
 | `npm start` | 启动游戏服务器（端口 3000） |
 | `npm run dev` | watch 模式（`node --watch`） |
-| `npm test` | 单元测试（52 项：协议解析/脏输入容错/合并钳制/剧情树/记忆/世界书） |
+| `npm test` | 单元测试（55 项：协议解析/脏输入容错/合并钳制/剧情树/记忆/世界书/APK 资产同步） |
 | `npm run test:api` | API 黑盒边界测试（20 项；需先起 mock 和游戏服；结束自动恢复 config 并清理快照） |
-| `npm run mock` | 启动 mock LLM 服务（端口 3001，OpenAI 兼容含流式 SSE） |
+| `npm run test:native` | APK 原生层验证（20 项；需先起 mock 和 `node test/cap-sim-server.js`） |
+| `npm run mock` | 启动 mock LLM 服务（端口 3001，OpenAI 兼容含流式 SSE；`MOCK_DIRTY` 可产脏输出） |
 | 浏览器打开 `http://localhost:3000` | 进入游戏 |
 | `node --check server.js` | 语法检查 |
 

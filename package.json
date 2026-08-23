@@ -8,6 +8,7 @@
     "dev": "node --watch server.js",
     "test": "node test/run-tests.js",
     "test:api": "node test/api-tests.js",
+    "test:native": "node test/native-harness.js",
     "mock": "node test/mock-llm.js",
     "cap:sync": "node tools/sync-native.js && npx cap sync android",
     "cap:build": "npm run cap:sync && cd android && gradlew.bat assembleDebug"

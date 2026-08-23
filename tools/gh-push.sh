@@ -15,7 +15,7 @@ curl -s -X POST "$API/user/repos" \
 let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{
   const j=JSON.parse(d);
   if (j.full_name) { console.log('created:', j.full_name); process.exit(0); }
-  if (j.errors && j.errors.some(e=>e.message==='name already exists')) { console.log('exists, reuse'); process.exit(0); }
+  if (j.errors && j.errors.some(e => /already exists/i.test(e.message || ''))) { console.log('exists, reuse'); process.exit(0); }
   console.error('create failed:', d.slice(0,300)); process.exit(1);
 })"
 
