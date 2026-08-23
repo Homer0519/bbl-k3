@@ -11,3 +11,7 @@ android/app/src/main/assets/public/
 .DS_Store
 .gh-token.json
 android-sdk/
+art.json
+device-flow.json
+poll*.json
+gh-run.log
