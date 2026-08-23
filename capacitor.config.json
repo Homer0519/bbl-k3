@@ -1,0 +1,11 @@
+{
+  "appId": "com.bbl.life",
+  "appName": "篮球人生",
+  "webDir": "public",
+  "android": {
+    "allowMixedContent": true
+  },
+  "server": {
+    "androidScheme": "http"
+  }
+}

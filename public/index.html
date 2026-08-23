@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>篮球人生 — LLM 文字篮球模拟</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ================= 标题屏 ================= -->
+    <section id="screen-title" class="screen active">
+      <div class="title-wrap">
+        <div class="title-logo" aria-hidden="true"><i></i><i></i></div>
+        <p class="title-kicker">A BASKETBALL LIFE IN TEXT</p>
+        <h1 class="title-name">篮球人生</h1>
+        <p class="title-sub">大语言模型驱动的文字生涯模拟</p>
+        <div class="title-menu">
+          <button class="btn big primary" id="btn-new">开始新的人生</button>
+          <button class="btn big" id="btn-continue">读取存档</button>
+          <button class="btn big" id="btn-settings">设置</button>
+        </div>
+        <div id="title-status"></div>
+      </div>
+    </section>
+
+    <!-- ================= 创建屏 ================= -->
+    <section id="screen-create" class="screen">
+      <div class="create-wrap panel">
+        <h2>创建你的球员</h2>
+        <div class="form-grid">
+          <label>姓名<input id="f-name" type="text" placeholder="林峰" maxlength="12"></label>
+          <label>位置
+            <select id="f-position">
+              <option value="PG">PG 控球后卫</option>
+              <option value="SG">SG 得分后卫</option>
+              <option value="SF" selected>SF 小前锋</option>
+              <option value="PF">PF 大前锋</option>
+              <option value="C">C 中锋</option>
+            </select>
+          </label>
+          <label>身高 (cm)<input id="f-height" type="number" value="188" min="150" max="230"></label>
+          <label>体重 (kg)<input id="f-weight" type="number" value="80" min="40" max="150"></label>
+          <label>起始舞台
+            <select id="f-stage">
+              <option value="high_school">高中联赛（无名之辈）</option>
+              <option value="cba">CBA（中国职业联赛）</option>
+              <option value="nba">NBA（世界之巅）</option>
+            </select>
+          </label>
+          <label>初始球队
+            <select id="f-team"><option value="">（由剧情决定）</option></select>
+          </label>
+          <label class="full">背景故事（可选，越详细剧情越贴合）
+            <textarea id="f-background" rows="3" placeholder="例：小城市长大，父亲是业余教练，从小泡在球馆里……"></textarea>
+          </label>
+        </div>
+        <div class="form-ops">
+          <button class="btn" id="create-back">返回</button>
+          <button class="btn primary" id="btn-start">开始职业生涯 →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 游戏屏 ================= -->
+    <section id="screen-game" class="screen">
+      <header class="game-header">
+        <div class="game-brand">篮球人生 <span class="game-brand-en">BBL</span></div>
+        <nav>
+          <button class="btn small" data-act="snapshot">快照</button>
+          <button class="btn small" data-act="regen">↻ 重生成</button>
+          <button class="btn small" data-act="save">存档</button>
+          <button class="btn small" data-act="settings">设置</button>
+          <button class="btn small ghost" data-act="quit">主页</button>
+        </nav>
+      </header>
+
+      <div class="game-layout">
+        <main id="narrative-area">
+          <div id="narrative-log"></div>
+        </main>
+        <aside id="sidebar"></aside>
+      </div>
+
+      <footer id="action-bar">
+        <div id="choices-area"></div>
+        <div class="free-input-row">
+          <input id="free-input" type="text" placeholder="或自由输入你的行动…" maxlength="200">
+          <button class="btn primary" id="btn-send">行动</button>
+        </div>
+      </footer>
+    </section>
+  </div>
+
+  <!-- ================= 模态框 ================= -->
+  <div id="modal-overlay" class="hidden">
+    <!-- 设置 -->
+    <div class="modal" id="modal-settings">
+      <div class="modal-head"><h3>设置</h3><button class="btn small ghost" data-close>✕</button></div>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="llm">LLM 配置</button>
+        <button class="tab-btn" data-tab="prompts">提示词</button>
+        <button class="tab-btn" data-tab="worldbook">世界书</button>
+      </div>
+
+      <div class="tab-page active" id="tab-llm">
+        <label>Base URL<input id="cfg-baseurl" type="text" placeholder="https://api.deepseek.com/v1"></label>
+        <label>模型<input id="cfg-model" type="text" placeholder="deepseek-chat"></label>
+        <label>API Key<input id="cfg-apikey" type="text" placeholder="sk-..."></label>
+        <p class="muted small">OpenAI 兼容接口。保存后无需重启即可生效。</p>
+        <button class="btn primary" id="btn-save-config">保存配置</button>
+      </div>
+
+      <div class="tab-page" id="tab-prompts">
+        <label>基础 System Prompt（留空 = 使用内置默认；填写后完全替换）
+          <textarea id="pr-system" rows="6" placeholder="留空使用内置默认提示词"></textarea>
+        </label>
+        <details class="default-prompt-fold">
+          <summary>查看内置默认提示词（当前生效中，因为自定义为空）</summary>
+          <textarea id="pr-system-default" rows="6" readonly></textarea>
+        </details>
+        <label>自定义追加提示词（无限制提示词，由你自行填写）
+          <textarea id="pr-unrestricted" rows="4" placeholder="留空 = 不追加任何内容。此处内容会原样追加到 system prompt 末尾，效果与合规性由你自行决定并承担。"></textarea>
+        </label>
+        <p class="muted small">⚠ 追加内容由用户自行填写并承担责任，默认为空。追加内容会拼在（默认或自定义的）基础提示词之后。</p>
+        <button class="btn primary" id="btn-save-prompts">保存提示词</button>
+      </div>
+
+      <div class="tab-page" id="tab-worldbook">
+        <select id="wb-select"></select>
+        <textarea id="wb-editor" rows="14" spellcheck="false" class="mono"></textarea>
+        <p class="muted small">世界书 JSON：teams[].{name,cn,city,keywords,style,players[],foreign_players[]}。按阶段/关键词自动注入 prompt。队伍数：<span id="wb-stats"></span></p>
+        <button class="btn primary" id="btn-save-worldbook">保存世界书</button>
+      </div>
+    </div>
+
+    <!-- 存档命名 -->
+    <div class="modal" id="modal-savebox">
+      <div class="modal-head"><h3>保存存档</h3><button class="btn small ghost" data-close>✕</button></div>
+      <label>存档名称（英文/数字/下划线）
+        <input id="save-slot-input" type="text" placeholder="slot1" maxlength="30">
+      </label>
+      <div class="form-ops">
+        <button class="btn" data-close>取消</button>
+        <button class="btn primary" id="btn-save-confirm">保存</button>
+      </div>
+    </div>
+
+    <!-- 存档 -->
+    <div class="modal" id="modal-saves">
+      <div class="modal-head"><h3>存档</h3><div><button class="btn small" id="btn-refresh-saves">刷新</button> <button class="btn small ghost" data-close>✕</button></div></div>
+      <div id="saves-list"></div>
+    </div>
+
+    <!-- 快照 -->
+    <div class="modal" id="modal-snapshots">
+      <div class="modal-head"><h3>场景快照 (ts / rs)</h3><button class="btn small ghost" data-close>✕</button></div>
+      <p class="muted small">每回合行动前自动拍摄快照；"重生成"会自动回退上一快照并重新生成。</p>
+      <div id="snapshots-list"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="/js/state.js"></script>
+  <script src="/js/memory.js"></script>
+  <script src="/js/worldbook.js"></script>
+  <script src="/js/llm.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/game.js"></script>
+  <script src="/js/native.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

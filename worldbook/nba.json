@@ -1,0 +1,347 @@
+{
+  "name": "NBA 世界书",
+  "desc": "NBA 三十支球队世界观。数据经网络核实：2025-26 赛季完赛数据 + 2026 夏窗变动（截至 2026-08）。代表球员非完整名单，用户可自行编辑。",
+  "stages": ["nba"],
+  "keywords": ["NBA", "美职篮", "美国职业篮球联赛"],
+  "league_intro": "NBA 是世界最高水平的篮球职业联赛，30 支球队分东西部各三个赛区，常规赛 82 场后进行季后赛，总冠军为奥布莱恩杯。\n\n【2025-26 赛季回顾】纽约尼克斯以东部第3种子的身份一路黑马：次轮横扫76人、东部决赛4:0横扫骑士、总决赛4:1击败圣安东尼奥马刺，自1973年后队史第三冠。布伦森荣膺总决赛MVP（场均32.6分），阿努诺比领跑季后赛胜利贡献值。常规赛MVP：谢伊·吉尔杰斯-亚历山大（31.1分6.6助攻）；最佳新秀：独行侠的库珀·弗拉格（21分6.7篮板4.5助攻，单场51分）。常规赛最终战绩——东部：1活塞（约56胜，爆冷登顶）、2凯尔特人（56-26）、3尼克斯（53-29）、4骑士（52-30）、5猛龙、8魔术（步行者跌出季后赛）；西部：1雷霆（64-18）、2马刺（62-20，西部决赛）、3掘金（54-28）、4湖人（53-29，首轮4:2淘汰火箭后止步西部半决赛）、5火箭（52-30，杜兰特首季场均26分）、12独行侠（26-56）。\n\n【2026 夏窗重磅】雄鹿将扬尼斯·阿德托昆博（连同波蒂斯）交易至热火，换回希罗/维尔/哈克斯等；凯尔特人将杰伦·布朗送至76人；湖人先签后换得到凯斯勒，勒布朗·詹姆斯宣布不再回归第24季，湖人进入东契奇+里夫斯+凯斯勒+塞克斯顿+格莱姆斯的后詹姆斯时代。",
+  "conferences": {
+    "east": ["New York Knicks", "Detroit Pistons", "Boston Celtics", "Cleveland Cavaliers", "Toronto Raptors", "Orlando Magic", "Philadelphia 76ers", "Miami Heat", "Milwaukee Bucks", "Indiana Pacers", "Chicago Bulls", "Atlanta Hawks", "Brooklyn Nets", "Charlotte Hornets", "Washington Wizards"],
+    "west": ["Oklahoma City Thunder", "San Antonio Spurs", "Denver Nuggets", "Los Angeles Lakers", "Houston Rockets", "Minnesota Timberwolves", "LA Clippers", "Golden State Warriors", "Memphis Grizzlies", "Phoenix Suns", "Sacramento Kings", "Dallas Mavericks", "New Orleans Pelicans", "Portland Trail Blazers", "Utah Jazz"]
+  },
+  "teams": [
+    {
+      "name": "New York Knicks", "cn": "纽约尼克斯", "city": "纽约", "conference": "east",
+      "keywords": ["尼克斯", "纽约人", "尼克斯队"],
+      "style": "2025-26 总冠军（4:1马刺），1973年后首冠，麦迪逊广场花园之王",
+      "players": [
+        { "name": "杰伦·布伦森", "position": "PG", "age": 29, "desc": "总决赛MVP（场均32.6分），球队灵魂，关键球大师" },
+        { "name": "卡尔-安东尼·唐斯", "position": "C", "age": 30, "desc": "投篮能力历史级的空间中锋，冠军二当家" },
+        { "name": "OG·阿努诺比", "position": "SF/PF", "age": 29, "desc": "冠军功臣，季后赛胜利贡献值联盟第一的精英防守者" },
+        { "name": "米卡尔·布里奇斯", "position": "SF", "age": 30, "desc": "铁人前锋，顶级3D" },
+        { "name": "约什·哈特", "position": "SF/PG", "age": 31, "desc": "篮板怪兽型锋线，能量无限" }
+      ]
+    },
+    {
+      "name": "Detroit Pistons", "cn": "底特律活塞", "city": "底特律", "conference": "east",
+      "keywords": ["活塞", "底特律"],
+      "style": "2025-26 东部第1（约56胜），重返巅峰的青年军",
+      "players": [
+        { "name": "凯德·坎宁安", "position": "PG", "age": 25, "desc": "状元核心，节奏型组织大师，东部一阵级别" },
+        { "name": "贾伦·杜伦", "position": "C", "age": 23, "desc": "暴力型年轻中锋，篮板机器" },
+        { "name": "奥萨尔·汤普森", "position": "SF/SG", "age": 24, "desc": "精英防守者，快攻利刃" },
+        { "name": "小蒂姆·哈达威", "position": "SG/SF", "age": 34, "desc": "老将射手" }
+      ]
+    },
+    {
+      "name": "Boston Celtics", "cn": "波士顿凯尔特人", "city": "波士顿", "conference": "east",
+      "keywords": ["凯尔特人", "绿军"],
+      "style": "2025-26 东部第2（56-26），2026夏痛失杰伦·布朗后重组",
+      "players": [
+        { "name": "杰森·塔图姆", "position": "SF/PF", "age": 28, "desc": "球队门面，全能得分手，重伤归来后率队56胜" },
+        { "name": "德里克·怀特", "position": "PG/SG", "age": 32, "desc": "全能后卫，封盖与三分俱佳" },
+        { "name": "朱·霍勒迪", "position": "PG", "age": 36, "desc": "老牌防守一阵控卫，冠军经验丰富" },
+        { "name": "克里斯塔普斯·波尔津吉斯", "position": "C/PF", "age": 31, "desc": "空间型七尺长人，外线高炮台" }
+      ],
+      "notes_2026": "2026年夏天将杰伦·布朗交易至76人，双探花时代落幕。"
+    },
+    {
+      "name": "Cleveland Cavaliers", "cn": "克利夫兰骑士", "city": "克利夫兰", "conference": "east",
+      "keywords": ["骑士", "克利夫兰"],
+      "style": "2025-26 东部第4（52-30），东部决赛被尼克斯横扫",
+      "players": [
+        { "name": "多诺万·米切尔", "position": "SG", "age": 29, "desc": "球队核心得分手，爆发力惊人" },
+        { "name": "达柳斯·加兰", "position": "PG", "age": 26, "desc": "灵巧控卫，挡拆大师" },
+        { "name": "埃文·莫布利", "position": "PF/C", "age": 25, "desc": "最佳防守球员级内线，攻防枢纽" },
+        { "name": "贾勒特·阿伦", "position": "C", "age": 28, "desc": "扎实蓝领中锋，吃饼与护框" }
+      ]
+    },
+    {
+      "name": "Toronto Raptors", "cn": "多伦多猛龙", "city": "多伦多", "conference": "east",
+      "keywords": ["猛龙", "多伦多"],
+      "style": "2025-26 东部第5重返季后赛的国际化青年军",
+      "players": [
+        { "name": "斯科蒂·巴恩斯", "position": "PF/SF", "age": 25, "desc": "球队核心，全能前锋，组织前锋打法" },
+        { "name": "RJ·巴雷特", "position": "SF", "age": 26, "desc": "加拿大本土球星，突破犀利" },
+        { "name": "伊曼纽尔·奎克利", "position": "PG/SG", "age": 27, "desc": "双能卫，投射进步显著" },
+        { "name": "格雷迪·迪克", "position": "SG/SF", "age": 23, "desc": "白人射手，无球跑动出色" }
+      ]
+    },
+    {
+      "name": "Orlando Magic", "cn": "奥兰多魔术", "city": "奥兰多", "conference": "east",
+      "keywords": ["魔术", "奥兰多"],
+      "style": "2025-26 东部第8，防守顶级的天赋军团",
+      "players": [
+        { "name": "保罗·班切罗", "position": "PF", "age": 24, "desc": "状元核心，力量型全能前锋" },
+        { "name": "弗朗茨·瓦格纳", "position": "SF", "age": 25, "desc": "德国全能前锋，持球核心" },
+        { "name": "戴斯蒙德·贝恩", "position": "SG", "age": 28, "desc": "2025年交易来投的高产双能卫" },
+        { "name": "杰伦·萨格斯", "position": "PG/SG", "age": 25, "desc": "防守悍将型后卫" }
+      ]
+    },
+    {
+      "name": "Philadelphia 76ers", "cn": "费城76人", "city": "费城", "conference": "east",
+      "keywords": ["76人", "费城"],
+      "style": "2026夏豪赌：杰伦·布朗加盟组成三巨头",
+      "players": [
+        { "name": "乔尔·恩比德", "position": "C", "age": 32, "desc": "MVP级中锋，健康时攻防统治力顶级" },
+        { "name": "泰瑞斯·马克西", "position": "PG/SG", "age": 25, "desc": "极速后卫，进步最快球员" },
+        { "name": "杰伦·布朗", "position": "SG/SF", "age": 30, "desc": "2026年从凯尔特人交易而来，前总决赛MVP，攻防一体" },
+        { "name": "保罗·乔治", "position": "SF", "age": 36, "desc": "全能老将前锋" }
+      ]
+    },
+    {
+      "name": "Miami Heat", "cn": "迈阿密热火", "city": "迈阿密", "conference": "east",
+      "keywords": ["热火", "迈阿密"],
+      "style": "2026夏窗最大赢家：字母哥降临，热火文化+超级巨星",
+      "players": [
+        { "name": "扬尼斯·阿德托昆博", "position": "PF/C", "age": 32, "desc": "两届MVP'字母哥'，2026年夏天从雄鹿交易而来，禁区统治力联盟第一" },
+        { "name": "巴姆·阿德巴约", "position": "C", "age": 29, "desc": "队长，防守一阵中锋，策应出色" },
+        { "name": "安德鲁·威金斯", "position": "SF", "age": 31, "desc": "天赋型前锋，冠军经验" },
+        { "name": "博比·波蒂斯", "position": "PF/C", "age": 31, "desc": "与字母哥一同从雄鹿来投的激情内线" },
+        { "name": "小杰米·贾克斯", "position": "SF/PF", "age": 26, "desc": "热血前锋，季后赛气质" }
+      ]
+    },
+    {
+      "name": "Milwaukee Bucks", "cn": "密尔沃基雄鹿", "city": "密尔沃基", "conference": "east",
+      "keywords": ["雄鹿", "密尔沃基"],
+      "style": "后字母哥时代的全面重建",
+      "players": [
+        { "name": "泰勒·希罗", "position": "SG/PG", "age": 26, "desc": "2026年字母哥交易的核心回报，射手型持球手" },
+        { "name": "凯尔·威尔", "position": "C", "age": 24, "desc": "交易来投的年轻护框长人" },
+        { "name": "凯尔·库兹马", "position": "PF", "age": 31, "desc": "冠军前锋，空间型四号位" },
+        { "name": "小凯文·波特", "position": "PG/SG", "age": 26, "desc": "持球得分手" }
+      ]
+    },
+    {
+      "name": "Indiana Pacers", "cn": "印第安纳步行者", "city": "印第安纳波利斯", "conference": "east",
+      "keywords": ["步行者", "印第安纳"],
+      "style": "2025 总决赛球队急坠，2025-26 跌出季后赛",
+      "players": [
+        { "name": "泰瑞斯·哈利伯顿", "position": "PG", "age": 26, "desc": "联盟顶级组织者，伤病后寻求东山再起" },
+        { "name": "帕斯卡尔·西亚卡姆", "position": "PF", "age": 32, "desc": "冠军前锋，全能得分点" },
+        { "name": "迈尔斯·特纳", "position": "C", "age": 30, "desc": "盖帽与三分兼备的空间中锋" },
+        { "name": "阿隆·内史密斯", "position": "SF", "age": 27, "desc": "3D 锋线，拼劲十足" }
+      ]
+    },
+    {
+      "name": "Chicago Bulls", "cn": "芝加哥公牛", "city": "芝加哥", "conference": "east",
+      "keywords": ["公牛", "芝加哥"],
+      "style": "年轻化改造中的老牌球队",
+      "players": [
+        { "name": "科比·怀特", "position": "PG/SG", "age": 26, "desc": "得分爆发力强的后场核心" },
+        { "name": "约什·吉迪", "position": "PG", "age": 24, "desc": "高个组织前锋型控卫" },
+        { "name": "马塔斯·布泽利斯", "position": "PF/SF", "age": 22, "desc": "立陶宛天赋新星" },
+        { "name": "尼科拉·武切维奇", "position": "C", "age": 36, "desc": "技术流老将中锋，投射出色" }
+      ]
+    },
+    {
+      "name": "Atlanta Hawks", "cn": "亚特兰大老鹰", "city": "亚特兰大", "conference": "east",
+      "keywords": ["老鹰", "亚特兰大"],
+      "style": "特雷·杨领衔的进攻型球队",
+      "players": [
+        { "name": "特雷·杨", "position": "PG", "age": 28, "desc": "超远三分与秒传并存的魔法师" },
+        { "name": "杰伦·约翰逊", "position": "PF", "age": 24, "desc": "爆发力十足的全能前锋" },
+        { "name": "扎卡里·里萨谢", "position": "SF", "age": 21, "desc": "法国状元前锋，投射天赋" },
+        { "name": "翁金郎·孔克纳普尔", "position": "SG", "age": 21, "desc": "2025探花，杜克出品的高大射手（最佳新秀票选第二）" }
+      ]
+    },
+    {
+      "name": "Brooklyn Nets", "cn": "布鲁克林篮网", "city": "布鲁克林", "conference": "east",
+      "keywords": ["篮网", "布鲁克林"],
+      "style": "重建中的年轻球队",
+      "players": [
+        { "name": "卡姆·托马斯", "position": "SG", "age": 25, "desc": "高产得分手，单打能力强" },
+        { "name": "尼古拉斯·克拉克斯顿", "position": "C", "age": 27, "desc": "运动型中锋，护框与换防出色" },
+        { "name": "诺阿·克劳尼", "position": "PF/C", "age": 22, "desc": "年轻空间型长人" },
+        { "name": "基翁·约翰逊", "position": "SG/PG", "age": 24, "desc": "爆发力出色的年轻后卫" }
+      ]
+    },
+    {
+      "name": "Charlotte Hornets", "cn": "夏洛特黄蜂", "city": "夏洛特", "conference": "east",
+      "keywords": ["黄蜂", "夏洛特", "山猫"],
+      "style": "围绕鲍尔与米勒的年轻后场",
+      "players": [
+        { "name": "拉梅洛·鲍尔", "position": "PG", "age": 25, "desc": "天赋异禀的传球艺术家" },
+        { "name": "布兰登·米勒", "position": "SF", "age": 24, "desc": "高顺位前锋，得分手段丰富" },
+        { "name": "迈尔斯·布里奇斯", "position": "PF/SF", "age": 28, "desc": "暴力扣将，错位攻击手" },
+        { "name": "马克·威廉姆斯", "position": "C", "age": 25, "desc": "护框型年轻中锋" }
+      ]
+    },
+    {
+      "name": "Washington Wizards", "cn": "华盛顿奇才", "city": "华盛顿", "conference": "east",
+      "keywords": ["奇才", "华盛顿"],
+      "style": "囤积天赋的重建球队",
+      "players": [
+        { "name": "亚历克斯·萨尔", "position": "C/PF", "age": 22, "desc": "法国高顺位长人，护框与投射潜力" },
+        { "name": "比拉尔·库利巴利", "position": "SF/SG", "age": 22, "desc": "法国锋卫摇摆人，防守天赋出众" },
+        { "name": "克里斯·米德尔顿", "position": "SF", "age": 35, "desc": "冠军老将，中投大师" },
+        { "name": "特雷·杰迈克尔", "position": "SG", "age": 27, "desc": "运动型得分手" }
+      ]
+    },
+    {
+      "name": "Oklahoma City Thunder", "cn": "俄克拉荷马城雷霆", "city": "俄克拉荷马城", "conference": "west",
+      "keywords": ["雷霆", "OKC", "俄克拉荷马"],
+      "style": "2024-25冠军、2025-26常规赛西部第一（64-18），年轻王朝",
+      "players": [
+        { "name": "谢伊·吉尔杰斯-亚历山大", "position": "SG/PG", "age": 28, "desc": "2025-26常规赛MVP（31.1分），中距离大师" },
+        { "name": "切特·霍姆格伦", "position": "C", "age": 24, "desc": "七尺独角兽，护框与三分兼备" },
+        { "name": "杰伦·威廉姆斯", "position": "SF", "age": 26, "desc": "全能二当家，攻防俱佳" },
+        { "name": "以赛亚·哈滕斯坦", "position": "C", "age": 28, "desc": "策应型蓝领中锋" },
+        { "name": "吕冈茨·多特", "position": "SG/SF", "age": 28, "desc": "头号外线大闸" }
+      ]
+    },
+    {
+      "name": "San Antonio Spurs", "cn": "圣安东尼奥马刺", "city": "圣安东尼奥", "conference": "west",
+      "keywords": ["马刺", "圣安东尼奥", "spurs"],
+      "style": "2025-26 西部第2（62-20）闯入西部决赛，文班亚马时代提前到来",
+      "players": [
+        { "name": "维克托·文班亚马", "position": "C", "height": 224, "age": 23, "desc": "'外星人'，历史级独角兽，攻防两端改写比赛" },
+        { "name": "斯蒂芬·卡斯尔", "position": "PG/SG", "age": 23, "desc": "2025-26季后赛总助攻王（141次），大场面后卫" },
+        { "name": "德阿龙·福克斯", "position": "PG", "age": 29, "desc": "极速控卫，关键时刻先生" },
+        { "name": "哈里森·巴恩斯", "position": "SF", "age": 34, "desc": "冠军老将锋线" }
+      ]
+    },
+    {
+      "name": "Denver Nuggets", "cn": "丹佛掘金", "city": "丹佛", "conference": "west",
+      "keywords": ["掘金", "丹佛"],
+      "style": "2025-26 西部第3（54-28），约基奇驱动的常青强队",
+      "players": [
+        { "name": "尼古拉·约基奇", "position": "C", "age": 31, "desc": "三届MVP，历史级策应中锋" },
+        { "name": "贾马尔·穆雷", "position": "PG", "age": 29, "desc": "大场面先生，季后赛杀手" },
+        { "name": "阿隆·戈登", "position": "PF", "age": 30, "desc": "冠军拼图，空切与防守核心" },
+        { "name": "小迈克尔·波特", "position": "SF", "age": 28, "desc": "身高臂长的纯射手" }
+      ]
+    },
+    {
+      "name": "Los Angeles Lakers", "cn": "洛杉矶湖人", "city": "洛杉矶", "conference": "west",
+      "keywords": ["湖人", "洛杉矶湖人", "紫金军团"],
+      "style": "后詹姆斯时代：2025-26 西部第4（53-29），2026夏全面重组",
+      "players": [
+        { "name": "卢卡·东契奇", "position": "PG", "age": 28, "desc": "球队新王，进攻万花筒，历史级持球核心" },
+        { "name": "奥斯汀·里夫斯", "position": "SG/PG", "age": 28, "desc": "落选秀逆袭的冠军级二当家，2026夏续约" },
+        { "name": "沃克·凯斯勒", "position": "C", "age": 25, "desc": "2026年先签后换来投的盖帽型中锋，防守支柱" },
+        { "name": "科林·塞克斯顿", "position": "PG/SG", "age": 27, "desc": "爆炸性得分手，第六人火力" },
+        { "name": "昆廷·格莱姆斯", "position": "SG", "age": 26, "desc": "3D后卫，外线大闸" }
+      ],
+      "notes_2026": "勒布朗·詹姆斯2026年夏宣布不再回归第24季，结束湖人生涯——他的传奇仍是更衣室壁画般的存在。"
+    },
+    {
+      "name": "Houston Rockets", "cn": "休斯顿火箭", "city": "休斯顿", "conference": "west",
+      "keywords": ["火箭", "休斯顿"],
+      "style": "2025-26 西部第5（52-30），杜兰特加盟首季场均26分，季后赛首轮4:2憾负湖人",
+      "players": [
+        { "name": "凯文·杜兰特", "position": "SF/PF", "age": 38, "desc": "'死神'，2025年加盟火箭首季场均26分5.5篮板4.8助攻，历史级纯得分手" },
+        { "name": "阿尔佩伦·申京", "position": "C", "age": 23, "desc": "土耳其策应中锋，'小约基奇'" },
+        { "name": "阿门·汤普森", "position": "PG/SF", "age": 24, "desc": "双能卫，身体天赋炸裂" },
+        { "name": "小贾巴里·史密斯", "position": "PF", "age": 23, "desc": "空间型四号位" },
+        { "name": "里德·谢泼德", "position": "PG/SG", "age": 22, "desc": "高顺位射手控卫" }
+      ]
+    },
+    {
+      "name": "Minnesota Timberwolves", "cn": "明尼苏达森林狼", "city": "明尼阿波利斯", "conference": "west",
+      "keywords": ["森林狼", "明尼苏达", "木狼"],
+      "style": "双塔防守铁闸与爱德华兹的暴力美学",
+      "players": [
+        { "name": "安东尼·爱德华兹", "position": "SG", "age": 25, "desc": "联盟新生代门面，暴力得分后卫" },
+        { "name": "朱利叶斯·兰德尔", "position": "PF", "age": 32, "desc": "全能前锋，内线强打" },
+        { "name": "鲁迪·戈贝尔", "position": "C", "age": 34, "desc": "四届最佳防守球员，法国高塔" },
+        { "name": "贾登·麦克丹尼尔斯", "position": "SF", "age": 26, "desc": "顶级3D锋线" }
+      ]
+    },
+    {
+      "name": "LA Clippers", "cn": "洛杉矶快船", "city": "洛杉矶", "conference": "west",
+      "keywords": ["快船", "船"],
+      "style": "伦纳德与哈登的老将争冠窗口",
+      "players": [
+        { "name": "科怀·伦纳德", "position": "SF", "age": 35, "desc": "两届FMVP'机器人'，攻防一体的终结者" },
+        { "name": "詹姆斯·哈登", "position": "PG/SG", "age": 37, "desc": "MVP级组织核心，后撤步大师" },
+        { "name": "伊维察·祖巴茨", "position": "C", "age": 30, "desc": "扎实内线，挡拆终结者" },
+        { "name": "诺曼·鲍威尔", "position": "SG", "age": 33, "desc": "超六出身的稳定得分手" }
+      ]
+    },
+    {
+      "name": "Golden State Warriors", "cn": "金州勇士", "city": "旧金山", "conference": "west",
+      "keywords": ["勇士", "金州", "湾区"],
+      "style": "库里体系：无球流动与三分海啸",
+      "players": [
+        { "name": "斯蒂芬·库里", "position": "PG", "age": 38, "desc": "历史最伟大射手，划时代的进攻引力" },
+        { "name": "吉米·巴特勒", "position": "SF", "age": 37, "desc": "硬汉领袖，季后赛变身者" },
+        { "name": "德雷蒙德·格林", "position": "PF", "age": 36, "desc": "防守大脑与进攻枢纽" },
+        { "name": "摩西·穆迪", "position": "SG/SF", "age": 24, "desc": "年轻3D侧翼" }
+      ]
+    },
+    {
+      "name": "Memphis Grizzlies", "cn": "孟菲斯灰熊", "city": "孟菲斯", "conference": "west",
+      "keywords": ["灰熊", "孟菲斯"],
+      "style": "磨砺蓝领气质与莫兰特的华丽并存",
+      "players": [
+        { "name": "贾·莫兰特", "position": "PG", "age": 27, "desc": "腾空派控卫，爆发力历史级" },
+        { "name": "小贾伦·杰克逊", "position": "PF/C", "age": 27, "desc": "最佳防守球员级内线，还能投三分" },
+        { "name": "扎克·伊迪", "position": "C", "height": 224, "age": 24, "desc": "华裔中锋'周志豪'，普渡大学两连最佳球员，护框高塔" }
+      ]
+    },
+    {
+      "name": "Phoenix Suns", "cn": "菲尼克斯太阳", "city": "菲尼克斯", "conference": "west",
+      "keywords": ["太阳", "菲尼克斯"],
+      "style": "后杜兰特时代的重组阵容",
+      "players": [
+        { "name": "德文·布克", "position": "SG", "age": 30, "desc": "球队门面，中距离杀器" },
+        { "name": "杰伦·格林", "position": "SG", "age": 24, "desc": "杜兰特交易来投的爆发型得分手" },
+        { "name": "狄龙·布鲁克斯", "position": "SF", "age": 31, "desc": "撕咬型防守前锋" }
+      ]
+    },
+    {
+      "name": "Sacramento Kings", "cn": "萨克拉门托国王", "city": "萨克拉门托", "conference": "west",
+      "keywords": ["国王", "萨克拉门托"],
+      "style": "进攻天赋溢出的跑轰球队",
+      "players": [
+        { "name": "扎克·拉文", "position": "SG", "age": 31, "desc": "弹跳与投射兼备的得分手" },
+        { "name": "多曼塔斯·萨博尼斯", "position": "C/PF", "age": 30, "desc": "策应型中锋，篮板机器" },
+        { "name": "德玛尔·德罗赞", "position": "SF/SG", "age": 37, "desc": "中距离艺术家" },
+        { "name": "马利克·蒙克", "position": "SG/PG", "age": 28, "desc": "超六级火力，大心脏" }
+      ]
+    },
+    {
+      "name": "Dallas Mavericks", "cn": "达拉斯独行侠", "city": "达拉斯", "conference": "west",
+      "keywords": ["独行侠", "小牛", "达拉斯"],
+      "style": "2025-26 西部第12（26-56），弗拉格闪耀的阵痛赛季",
+      "players": [
+        { "name": "库珀·弗拉格", "position": "PF/SF", "age": 20, "desc": "2025状元、2025-26最佳新秀（21分6.7篮板4.5助攻，新秀赛季单场51分），联盟未来门面" },
+        { "name": "安东尼·戴维斯", "position": "PF/C", "age": 33, "desc": "'浓眉'，攻防一体的冠军内线" },
+        { "name": "凯里·欧文", "position": "PG/SG", "age": 34, "desc": "人球合一的控球大师，伤病后归来" },
+        { "name": "德里克·莱夫利二世", "position": "C", "age": 22, "desc": "年轻护框中锋" }
+      ]
+    },
+    {
+      "name": "New Orleans Pelicans", "cn": "新奥尔良鹈鹕", "city": "新奥尔良", "conference": "west",
+      "keywords": ["鹈鹕", "新奥尔良"],
+      "style": "锡安的健康赌局",
+      "players": [
+        { "name": "锡安·威廉姆森", "position": "PF", "age": 26, "desc": "暴力美学化身，禁区碾压者" },
+        { "name": "特雷·墨菲三世", "position": "SF/SG", "age": 26, "desc": "顶级空间前锋" },
+        { "name": "乔丹·霍金斯", "position": "SG", "age": 24, "desc": "康大冠军射手" },
+        { "name": "伊夫斯·米西", "position": "C", "age": 23, "desc": "年轻运动型中锋" }
+      ]
+    },
+    {
+      "name": "Portland Trail Blazers", "cn": "波特兰开拓者", "city": "波特兰", "conference": "west",
+      "keywords": ["开拓者", "波特兰", "撕裂之城"],
+      "style": "撕裂之城重建进行时，中国球员杨瀚森效力于此",
+      "players": [
+        { "name": "杨瀚森", "position": "C", "height": 216, "age": 21, "desc": "中国天才中锋，2025年首轮第16顺位被开拓者选中，策应与低位脚步出色，'中国约基奇'，中国球迷的焦点" },
+        { "name": "斯库特·亨德森", "position": "PG", "age": 23, "desc": "高顺位爆发型控卫" },
+        { "name": "谢登·夏普", "position": "SG/SF", "age": 23, "desc": "飞天遁地的年轻侧翼" },
+        { "name": "图马尼·卡马拉", "position": "PF/SF", "age": 26, "desc": "全能防守型前锋" }
+      ]
+    },
+    {
+      "name": "Utah Jazz", "cn": "犹他爵士", "city": "盐湖城", "conference": "west",
+      "keywords": ["爵士", "犹他", "盐湖城"],
+      "style": "高原重建军",
+      "players": [
+        { "name": "劳里·马尔卡宁", "position": "PF/C", "age": 30, "desc": "七尺射手，全明星级别得分手" },
+        { "name": "基昂特·乔治", "position": "SG/PG", "age": 23, "desc": "年轻得分后卫" },
+        { "name": "艾斯·贝利", "position": "SF/SG", "age": 20, "desc": "高顺位天赋前锋" }
+      ]
+    }
+  ]
+}

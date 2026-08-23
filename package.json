@@ -1,0 +1,26 @@
+{
+  "name": "basketball-life",
+  "version": "1.0.0",
+  "description": "篮球人生 — LLM 驱动的文字篮球人生模拟游戏（独立 Web 版）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node test/run-tests.js",
+    "test:api": "node test/api-tests.js",
+    "mock": "node test/mock-llm.js",
+    "cap:sync": "node tools/sync-native.js && npx cap sync android",
+    "cap:build": "npm run cap:sync && cd android && gradlew.bat assembleDebug"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.6.8",
+    "@capacitor/core": "^7.6.8",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.6.8"
+  }
+}
