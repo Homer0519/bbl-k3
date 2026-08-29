@@ -43,7 +43,7 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/debug/app-debug.apk "dist/篮球人生-debug.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "dist/BasketballLife-v${GITHUB_REF_NAME}-debug.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

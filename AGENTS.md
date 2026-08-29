@@ -19,7 +19,7 @@
 
 **单一事实源约定**：`prompts-default.json`（根目录）为默认提示词唯一来源，server.js 启动时读取，APK 资产由 `npm run cap:sync` 复制同步（单测校验两份一致防漂移）；世界书同理（`worldbook/` → `public/worldbook/`）。
 
-**APK 验证方式**（无模拟器/真机时）：`npm run mock` + `node test/cap-sim-server.js` 起模拟环境（静态托管 public/ + 注入 `window.Capacitor` 桩 + `/llm-proxy` 模拟原生网络），浏览器开 `http://127.0.0.1:3300` 即为 APK 同款代码路径；`npm run test:native` 对 native.js 本地 API 做 20 项确定性验证（配置/资产/LLM 非流式/模拟 SSE/存档快照/白名单）。APK 产物：`dist/篮球人生-debug.apk`（Actions 构建后下载），仓库 `Homer0519/bbl-basketball-life`（public，推送自动重建）。详见 `APK-BUILD.md`。
+**APK 验证方式**（无模拟器/真机时）：`npm run mock` + `node test/cap-sim-server.js` 起模拟环境（静态托管 public/ + 注入 `window.Capacitor` 桩 + `/llm-proxy` 模拟原生网络），浏览器开 `http://127.0.0.1:3300` 即为 APK 同款代码路径；`npm run test:native` 对 native.js 本地 API 做 20 项确定性验证（配置/资产/LLM 非流式/模拟 SSE/存档快照/白名单）。APK 产物：Release 页 `BasketballLife-v*-debug.apk`（推 `v*` 标签自动发布），仓库 `Homer0519/bbl-basketball-life`（public，推送自动重建）。详见 `APK-BUILD.md`。
 
 ---
 
