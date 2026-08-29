@@ -23,7 +23,7 @@ const MIME = {
 };
 
 const server = http.createServer((req, res) => {
-  // 模拟 CapacitorHttp：原生网络（无 CORS）→ 服务端转发
+  // 模拟 CapacitorHttp：原生网络（无 CORS）→ 服务端转发（POST body / GET headers）
   if (req.method === 'POST' && req.url === '/llm-proxy') {
     let raw = '';
     req.on('data', c => raw += c);
@@ -46,11 +46,37 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
+  // GET 转发（如 /models 列表）：url 与 Authorization 经 query 传递
+  if (req.method === 'GET' && req.url.startsWith('/llm-proxy-get')) {
+    const q = new URL(req.url, 'http://x').searchParams;
+    fetch(q.get('url'), {
+      headers: { 'Authorization': q.get('auth') || '' }
+    }).then(async r => {
+      if (!r.ok) {
+        const body = await r.text().catch(() => '');
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: `LLM HTTP ${r.status}: ${body.slice(0, 200)}` }));
+        return;
+      }
+      const data = await r.json();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ data }));
+    }).catch(e => {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    });
+    return;
+  }
 
   // 静态文件
   let file = req.url === '/' ? '/index.html' : req.url.split('?')[0];
-  const fp = path.join(PUB, file);
-  if (!fp.startsWith(PUB) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) {
+  let fp = path.join(PUB, file);
+  // cap-mock.js 位于 test/（模拟器专用，不入 APK）
+  if (file === '/cap-mock.js') fp = path.join(__dirname, 'cap-mock.js');
+  if (!fp.startsWith(PUB) && !fp.startsWith(__dirname)) {
+    res.writeHead(403); res.end('forbidden'); return;
+  }
+  if (!fs.existsSync(fp) || fs.statSync(fp).isDirectory()) {
     res.writeHead(404); res.end('not found'); return;
   }
   let content = fs.readFileSync(fp);
@@ -59,7 +85,10 @@ const server = http.createServer((req, res) => {
     content = Buffer.from(content.toString('utf8')
       .replace('<script src="/js/state.js">', '<script src="/cap-mock.js"></script>\n  <script src="/js/state.js">'));
   }
-  res.writeHead(200, { 'Content-Type': MIME[path.extname(fp)] || 'application/octet-stream' });
+  res.writeHead(200, {
+    'Content-Type': MIME[path.extname(fp)] || 'application/octet-stream',
+    'Cache-Control': 'no-store'   // 验证环境禁缓存，改前端代码立即生效
+  });
   res.end(content);
 });
 

@@ -177,6 +177,27 @@ function applyDirty(content) {
 
 // ---- HTTP 服务 ----
 const server = http.createServer((req, res) => {
+  // 模型列表端点（OpenAI 兼容 GET /v1/models）
+  if (req.method === 'GET' && req.url.includes('/models')) {
+    const auth = req.headers['authorization'] || '';
+    const validKey = process.env.MOCK_API_KEY || 'sk-mock-test-key';
+    if (auth !== `Bearer ${validKey}`) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: { message: 'Invalid API key' } }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      object: 'list',
+      data: [
+        { id: 'mock-model' },
+        { id: 'mock-model-pro' },
+        { id: 'mock-reasoner' }
+      ]
+    }));
+    return;
+  }
+
   if (req.method !== 'POST' || !req.url.includes('/chat/completions')) {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'not found' }));

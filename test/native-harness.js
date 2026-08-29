@@ -15,7 +15,7 @@ global.localStorage = {
   key: i => Array.from(store.keys())[i] ?? null
 };
 
-// Capacitor 模拟（与 test/cap-mock.js 同构：CapacitorHttp → sim /llm-proxy）
+// Capacitor 模拟（与 test/cap-mock.js 同构：CapacitorHttp → sim /llm-proxy[/get]）
 global.Capacitor = {
   isNativePlatform: () => true,
   Plugins: {
@@ -26,6 +26,15 @@ global.Capacitor = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: o.url, headers: o.headers, data: o.data })
         }).then(async r => {
+          const j = await r.json();
+          if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status);
+          return j;
+        });
+      },
+      get(o) {
+        const auth = (o.headers && o.headers['Authorization']) || '';
+        const u = 'http://127.0.0.1:3300/llm-proxy-get?url=' + encodeURIComponent(o.url) + '&auth=' + encodeURIComponent(auth);
+        return fetch(u).then(async r => {
           const j = await r.json();
           if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status);
           return j;
@@ -83,6 +92,26 @@ const J = (o) => JSON.stringify(o);
   ok('system 组装', j.system_prompt.includes('篮球人生模拟游戏引擎'));
 
   console.log('\n== ③ LLM 非流式（CapacitorHttp 路径） ==');
+  r = await fetch('/api/llm/models');
+  j = await r.json();
+  ok('模型列表（GET /models 代理）', j.success && Array.isArray(j.models) && j.models.includes('mock-model') && j.models.includes('mock-reasoner'), J(j).slice(0, 120));
+
+  // fetchModels 按钮的核心分支：未配置 → 报错不崩溃；已配置 → 返回列表
+  localStorage.removeItem('bblv1_config');
+  r = await fetch('/api/llm/models');
+  ok('未配置时 models 明确报错', r.status === 500 && (await r.json()).error.includes('LLM 未配置'));
+  await fetch('/api/config', { method: 'POST', body: J({ api_key: 'sk-mock-test-key', base_url: 'http://127.0.0.1:3001/v1', model: 'mock-model' }) });
+  r = await fetch('/api/llm/models');
+  j = await r.json();
+  ok('配置后 models 恢复可用', j.success && j.models.length === 3);
+
+  // 错误 key → 401 透传为错误信息
+  await fetch('/api/config', { method: 'POST', body: J({ api_key: 'bad-key' }) });
+  r = await fetch('/api/llm/models');
+  j = await r.json();
+  ok('错误 key 时 models 透传 401', r.status === 500 && /401/.test(j.error), J(j).slice(0, 120));
+  await fetch('/api/config', { method: 'POST', body: J({ api_key: 'sk-mock-test-key' }) });
+
   r = await fetch('/api/llm/non-stream', { method: 'POST', body: J({ prompt: '生成开局场景\n球员姓名：验证员\n位置：PG\n身高：180\n体重：75\n起始舞台：high_school', system_prompt: 's' }) });
   j = await r.json();
   ok('开局生成', j.success && j.content.includes('##STATE##') && j.content.includes('验证员'), J(j).slice(0, 120));

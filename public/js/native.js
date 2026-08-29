@@ -97,6 +97,17 @@ BBL.NATIVE = false;
     return content;
   }
 
+  // 获取上游模型列表（GET {base_url}/models）
+  async function listModels() {
+    if (!http) throw new Error('CapacitorHttp 不可用');
+    const cfg = loadConfig();
+    if (!cfg.api_key || !cfg.base_url) throw new Error('LLM 未配置：请先填写 api_key / base_url');
+    const url = String(cfg.base_url).replace(/\/+$/, '') + '/models';
+    const r = await http.get({ url, headers: { 'Authorization': 'Bearer ' + cfg.api_key } });
+    const models = ((r.data && r.data.data) || []).map(m => m.id).filter(Boolean).sort();
+    return models;
+  }
+
   // ---- 模拟 SSE 流式响应（本地分片 + 延迟，走前端 _ls 解析器）----
   function sseResponse(fullText) {
     const enc = new TextEncoder();
@@ -257,6 +268,14 @@ BBL.NATIVE = false;
     }
 
     // ---------- LLM ----------
+    if (path === '/api/llm/models' && method === 'GET') {
+      try {
+        const models = await listModels();
+        return jsonResponse({ success: true, models });
+      } catch (e) {
+        return jsonResponse({ success: false, error: e.message }, 500);
+      }
+    }
     if (path === '/api/llm/non-stream' && method === 'POST') {
       if (!body.prompt) return jsonResponse({ success: false, error: 'Missing prompt' }, 400);
       try {

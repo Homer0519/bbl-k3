@@ -3,7 +3,11 @@ name: Android APK Build
 on:
   push:
     branches: [main, master]
+    tags: ['v*']
   workflow_dispatch:
+
+permissions:
+  contents: write   # tag 推送时创建 Release
 
 jobs:
   build:
@@ -47,3 +51,13 @@ jobs:
           name: basketball-life-apk
           path: dist/*.apk
           retention-days: 30
+
+      # 推 v* 标签时：把 APK 发到 GitHub Release
+      - name: Create Release and upload APK
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.apk
+          generate_release_notes: true
+          draft: false
+          prerelease: false

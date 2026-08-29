@@ -2,6 +2,8 @@
 
 ## 状态速览
 
+- **Release**：推送 `v*` 标签即自动构建并把 APK 发到 GitHub Release（如 `git tag v1.0.0 && git push origin v1.0.0`）；仓库主页 → Releases 页直接下载
+
 - 代码已推送到 **私有仓库 `Homer0519/bbl-basketball-life`**（main 分支）
 - GitHub Actions workflow：`.github/workflows/android.yml`（推送即自动构建 debug APK，产物名 `basketball-life-apk`）
 - 本机直连 `github.com` 不稳定，**走本地代理 `127.0.0.1:10808`（HTTP）可用**

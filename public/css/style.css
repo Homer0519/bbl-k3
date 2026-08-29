@@ -443,6 +443,18 @@ textarea { font-size: 13px; }
 .default-prompt-fold summary:hover { color: var(--accent); }
 .default-prompt-fold textarea { margin-bottom: 14px; }
 
+/* 模型列表获取 */
+.model-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -6px 0 14px;
+}
+.model-row .btn { flex-shrink: 0; }
+#model-status { word-break: break-all; }
+#cfg-model-select { margin-bottom: 14px; }
+.hidden { display: none !important; }
+
 .tabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--line); padding-bottom: 0; }
 .tab-btn {
   background: transparent;

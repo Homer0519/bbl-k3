@@ -1,5 +1,5 @@
 // Capacitor WebView 环境模拟（由 cap-sim-server 注入，不入 APK）
-// 定义 window.Capacitor 与 CapacitorHttp 桩：post 走 /llm-proxy（服务端转发，模拟原生无 CORS 网络）
+// 定义 window.Capacitor 与 CapacitorHttp 桩：post 走 /llm-proxy、get 走 /llm-proxy-get（服务端转发，模拟原生无 CORS 网络）
 window.Capacitor = {
   isNativePlatform: () => true,
   Plugins: {
@@ -14,8 +14,17 @@ window.Capacitor = {
           if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status);
           return j; // { data: parsedJSON } 与 CapacitorHttp 返回结构一致
         });
+      },
+      get(options) {
+        const auth = (options.headers && options.headers['Authorization']) || '';
+        return fetch('/llm-proxy-get?url=' + encodeURIComponent(options.url) + '&auth=' + encodeURIComponent(auth))
+          .then(async r => {
+            const j = await r.json();
+            if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status);
+            return j;
+          });
       }
     }
   }
 };
-console.log('[cap-mock] window.Capacitor 已注入（CapacitorHttp → /llm-proxy）');
+console.log('[cap-mock] window.Capacitor 已注入（CapacitorHttp → /llm-proxy[/get]）');

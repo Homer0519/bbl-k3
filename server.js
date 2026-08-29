@@ -192,8 +192,34 @@ app.post('/api/llm/non-stream', async (req, res) => {
   }
 });
 
-app.post('/api/llm/stream', async (req, res) => {
-  const { prompt, system_prompt, temperature } = req.body || {};
+// 获取上游模型列表（GET {base_url}/models 代理）
+app.get('/api/llm/models', async (req, res) => {
+  const cfg = loadConfig();
+  if (!cfg.api_key || !cfg.base_url) {
+    return res.status(400).json({ success: false, error: 'LLM 未配置：请先填写 api_key / base_url' });
+  }
+  try {
+    const url = cfg.base_url.replace(/\/+$/, '') + '/models';
+    const resp = await fetch(url, {
+      signal: AbortSignal.timeout(15000),
+      headers: { 'Authorization': `Bearer ${cfg.api_key}` }
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '');
+      throw new Error(`LLM HTTP ${resp.status}: ${body.slice(0, 200)}`);
+    }
+    const data = await resp.json();
+    const models = (data?.data || [])
+      .map(m => m.id)
+      .filter(Boolean)
+      .sort();
+    res.json({ success: true, models });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.post('/api/llm/stream', async (req, res) => {  const { prompt, system_prompt, temperature } = req.body || {};
   if (!prompt) return res.status(400).json({ success: false, error: 'Missing prompt' });
 
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');

@@ -1,7 +1,7 @@
 {
-  "api_key": "",
-  "base_url": "https://api.deepseek.com/v1",
-  "model": "deepseek-chat",
+  "api_key": "sk-mock-test-key",
+  "base_url": "http://localhost:3001/v1",
+  "model": "mock-model",
   "temperature": 0.8,
   "server": {
     "port": 3000,

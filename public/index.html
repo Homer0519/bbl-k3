@@ -107,6 +107,13 @@
       <div class="tab-page active" id="tab-llm">
         <label>Base URL<input id="cfg-baseurl" type="text" placeholder="https://api.deepseek.com/v1"></label>
         <label>模型<input id="cfg-model" type="text" placeholder="deepseek-chat"></label>
+        <div class="model-row">
+          <button class="btn small" id="btn-fetch-models">⟳ 获取模型列表</button>
+          <span class="muted small" id="model-status">先填 Base URL 与 API Key，再获取</span>
+        </div>
+        <select id="cfg-model-select" class="hidden">
+          <option value="">— 选择模型 —</option>
+        </select>
         <label>API Key<input id="cfg-apikey" type="text" placeholder="sk-..."></label>
         <p class="muted small">OpenAI 兼容接口。保存后无需重启即可生效。</p>
         <button class="btn primary" id="btn-save-config">保存配置</button>

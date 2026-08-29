@@ -171,6 +171,28 @@ async function main() {
 
   console.log('\n== LLM 错误传播 ==');
 
+  await test('模型列表：未配置 key 时 400', async () => {
+    await post('/api/config', { api_key: '' });
+    const r = await get('/api/llm/models');
+    assertEq(r.status, 400);
+    await post('/api/config', { api_key: MOCK_KEY });
+  });
+
+  await test('模型列表：正常返回并排序', async () => {
+    const r = await get('/api/llm/models');
+    const j = await r.json();
+    assert(j.success && j.models.includes('mock-model') && j.models.includes('mock-model-pro'), '应含 mock 模型: ' + JSON.stringify(j));
+    assertEq(j.models, [...j.models].sort(), '应排序');
+  });
+
+  await test('模型列表：错误 key 透传', async () => {
+    await post('/api/config', { api_key: 'invalid-key' });
+    const r = await get('/api/llm/models');
+    const j = await r.json();
+    assert(!j.success && /401/.test(j.error), '应含 401: ' + j.error);
+    await post('/api/config', { api_key: MOCK_KEY });
+  });
+
   await test('上游 401 透传为错误', async () => {
     await post('/api/config', { api_key: 'invalid-key' });
     const r = await post('/api/llm/non-stream', { prompt: 'hi' });

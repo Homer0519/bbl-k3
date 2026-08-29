@@ -136,6 +136,7 @@ LLM 叙事文本末尾嵌入：
 |---|---|---|
 | `/api/config` | GET/POST | LLM 配置（GET 回传脱敏 key） |
 | `/api/llm/non-stream` | POST | `_ll` 非流式 |
+| `/api/llm/models` | GET | 上游模型列表代理（设置页"获取模型列表"按钮） |
 | `/api/llm/stream` | POST | `_ls` 流式 SSE |
 | `/api/save`、`/api/load/:slot`、`/api/saves`、`/api/save/delete` | POST/GET | 存档 |
 | `/api/snapshot`、`/api/snapshot/restore`、`/api/snapshots` | POST/GET | 快照 ts/rs |

@@ -110,6 +110,11 @@ function bindModals() {
   });
 
   $('#btn-save-config').onclick = saveConfig;
+  $('#btn-fetch-models').onclick = fetchModels;
+  $('#cfg-model-select').onchange = () => {
+    const v = $('#cfg-model-select').value;
+    if (v) $('#cfg-model').value = v;
+  };
   $('#btn-save-prompts').onclick = savePrompts;
   $('#wb-select').onchange = loadWorldbookEditor;
   $('#btn-save-worldbook').onclick = saveWorldbook;
@@ -548,6 +553,65 @@ async function openSettingsModal(tab) {
       sel.appendChild(opt);
     }
     if (sel.options.length) loadWorldbookEditor();
+  }
+}
+
+// 拉取上游模型列表（GET /api/llm/models），填充下拉
+async function fetchModels() {
+  const btn = $('#btn-fetch-models');
+  const status = $('#model-status');
+  const sel = $('#cfg-model-select');
+
+  // 未保存的草稿也要能试：先按当前表单值即时生效（不落盘）
+  const draft = {
+    base_url: $('#cfg-baseurl').value.trim(),
+    model: $('#cfg-model').value.trim(),
+    api_key: $('#cfg-apikey').value.trim()
+  };
+  const keyIsMasked = draft.api_key.includes('****');
+  try {
+    if (draft.base_url && draft.api_key && !keyIsMasked) {
+      await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft)
+      });
+    }
+  } catch { /* 草稿应用失败则按已保存配置尝试 */ }
+
+  btn.disabled = true;
+  status.textContent = '获取中…';
+  sel.classList.add('hidden');
+  try {
+    const r = await (await fetch('/api/llm/models')).json();
+    if (!r.success || !Array.isArray(r.models) || r.models.length === 0) {
+      throw new Error(r.error || '未返回任何模型');
+    }
+    sel.innerHTML = '';
+    for (const m of r.models) {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      sel.appendChild(opt);
+    }
+    // 当前模型不在列表中时置顶提示项
+    const cur = $('#cfg-model').value.trim();
+    if (cur && !r.models.includes(cur)) {
+      const opt = document.createElement('option');
+      opt.value = cur;
+      opt.textContent = cur + '（当前，列表外）';
+      opt.selected = true;
+      sel.insertBefore(opt, sel.firstChild);
+    } else if (cur) {
+      sel.value = cur;
+    }
+    sel.classList.remove('hidden');
+    status.textContent = `获取成功：${r.models.length} 个模型`;
+  } catch (e) {
+    status.textContent = '获取失败：' + e.message;
+    BBL.ui.toast('模型列表获取失败：' + e.message, 3500);
+  } finally {
+    btn.disabled = false;
   }
 }
 
