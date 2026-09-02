@@ -1,10 +1,10 @@
-apply plugin: 'com.android.application'
+﻿apply plugin: 'com.android.application'
 
 android {
-    namespace "com.bbl.life"
+    namespace "com.bbl.life.k3"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.bbl.life"
+        applicationId "com.bbl.life.k3"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

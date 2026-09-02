@@ -1,6 +1,6 @@
 {
-  "appId": "com.bbl.life",
-  "appName": "篮球人生",
+  "appId": "com.bbl.life.k3",
+  "appName": "篮球人生K3",
   "webDir": "public",
   "android": {
     "allowMixedContent": true

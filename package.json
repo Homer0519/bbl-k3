@@ -1,7 +1,7 @@
 {
-  "name": "basketball-life",
+  "name": "bbl-k3",
   "version": "1.0.0",
-  "description": "篮球人生 — LLM 驱动的文字篮球人生模拟游戏（独立 Web 版）",
+  "description": "篮球人生K3 — LLM 驱动的文字篮球人生模拟游戏（独立 Web 版）",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -22,6 +22,7 @@
     "express": "^4.19.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.6.8"
+    "@capacitor/cli": "^7.6.8",
+    "playwright": "^1.62.1"
   }
 }

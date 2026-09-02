@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f1ea">
   <title>篮球人生 — LLM 文字篮球模拟</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -12,14 +13,18 @@
     <!-- ================= 标题屏 ================= -->
     <section id="screen-title" class="screen active">
       <div class="title-wrap">
+        <div class="title-top">
+          <span class="title-issue">VOL.01 · CAREER MODE</span>
+          <span class="title-issue">LLM NARRATIVE</span>
+        </div>
         <div class="title-logo" aria-hidden="true"><i></i><i></i></div>
-        <p class="title-kicker">A BASKETBALL LIFE IN TEXT</p>
         <h1 class="title-name">篮球人生</h1>
-        <p class="title-sub">大语言模型驱动的文字生涯模拟</p>
+        <p class="title-en">A BASKETBALL LIFE, WRITTEN BY AI</p>
+        <p class="title-sub">从无名之辈到世界之巅 —— 你的每一次选择，<br>都由大语言模型书写成独一无二的职业生涯。</p>
         <div class="title-menu">
           <button class="btn big primary" id="btn-new">开始新的人生</button>
           <button class="btn big" id="btn-continue">读取存档</button>
-          <button class="btn big" id="btn-settings">设置</button>
+          <button class="btn big ghost" id="btn-settings">设置</button>
         </div>
         <div id="title-status"></div>
       </div>
@@ -27,8 +32,11 @@
 
     <!-- ================= 创建屏 ================= -->
     <section id="screen-create" class="screen">
-      <div class="create-wrap panel">
-        <h2>创建你的球员</h2>
+      <div class="create-wrap">
+        <header class="create-head">
+          <p class="kicker">NEW CAREER</p>
+          <h2>创建你的球员</h2>
+        </header>
         <div class="form-grid">
           <label>姓名<input id="f-name" type="text" placeholder="林峰" maxlength="12"></label>
           <label>位置
@@ -52,13 +60,13 @@
           <label>初始球队
             <select id="f-team"><option value="">（由剧情决定）</option></select>
           </label>
-          <label class="full">背景故事（可选，越详细剧情越贴合）
+          <label class="full">背景故事<span class="label-hint">可选，越详细剧情越贴合</span>
             <textarea id="f-background" rows="3" placeholder="例：小城市长大，父亲是业余教练，从小泡在球馆里……"></textarea>
           </label>
         </div>
         <div class="form-ops">
-          <button class="btn" id="create-back">返回</button>
-          <button class="btn primary" id="btn-start">开始职业生涯 →</button>
+          <button class="btn" id="create-back">← 返回</button>
+          <button class="btn primary" id="btn-start">开始职业生涯</button>
         </div>
       </div>
     </section>
@@ -66,10 +74,11 @@
     <!-- ================= 游戏屏 ================= -->
     <section id="screen-game" class="screen">
       <header class="game-header">
-        <div class="game-brand">篮球人生 <span class="game-brand-en">BBL</span></div>
+        <div class="game-brand">篮球人生<span class="game-brand-en">BBL</span></div>
         <nav>
+          <button class="btn small" id="btn-stats-toggle" aria-label="球员数据">数据</button>
           <button class="btn small" data-act="snapshot">快照</button>
-          <button class="btn small" data-act="regen">↻ 重生成</button>
+          <button class="btn small" data-act="regen">重生成</button>
           <button class="btn small" data-act="save">存档</button>
           <button class="btn small" data-act="settings">设置</button>
           <button class="btn small ghost" data-act="quit">主页</button>
@@ -80,6 +89,7 @@
         <main id="narrative-area">
           <div id="narrative-log"></div>
         </main>
+        <div id="sidebar-backdrop"></div>
         <aside id="sidebar"></aside>
       </div>
 
@@ -101,10 +111,17 @@
       <div class="tabs">
         <button class="tab-btn active" data-tab="llm">LLM 配置</button>
         <button class="tab-btn" data-tab="prompts">提示词</button>
+        <button class="tab-btn" data-tab="tavern">酒馆预设</button>
         <button class="tab-btn" data-tab="worldbook">世界书</button>
       </div>
 
       <div class="tab-page active" id="tab-llm">
+        <label>接口类型
+          <select id="cfg-api-type">
+            <option value="chat_completions">Chat Completions（/chat/completions，OpenAI 兼容）</option>
+            <option value="responses">Responses API（/responses）</option>
+          </select>
+        </label>
         <label>Base URL<input id="cfg-baseurl" type="text" placeholder="https://api.deepseek.com/v1"></label>
         <label>模型<input id="cfg-model" type="text" placeholder="deepseek-chat"></label>
         <div class="model-row">
@@ -115,23 +132,61 @@
           <option value="">— 选择模型 —</option>
         </select>
         <label>API Key<input id="cfg-apikey" type="text" placeholder="sk-..."></label>
-        <p class="muted small">OpenAI 兼容接口。保存后无需重启即可生效。</p>
+
+        <details class="sampling-fold">
+          <summary>采样参数（高级，留空用上游玩法默认）</summary>
+          <div class="sampling-grid">
+            <label>temperature<input id="cfg-temperature" type="number" step="0.05" min="0" max="2" placeholder="0.8"></label>
+            <label>top_p<input id="cfg-top-p" type="number" step="0.05" min="0" max="1" placeholder="如 0.9"></label>
+            <label>top_k<input id="cfg-top-k" type="number" step="1" min="0" placeholder="部分上游支持"></label>
+            <label>presence_penalty<input id="cfg-presence" type="number" step="0.1" min="-2" max="2" placeholder="-2 ~ 2"></label>
+            <label>frequency_penalty<input id="cfg-frequency" type="number" step="0.1" min="-2" max="2" placeholder="-2 ~ 2"></label>
+            <label>max_tokens<input id="cfg-max-tokens" type="number" step="1" min="1" placeholder="不限制"></label>
+          </div>
+          <p class="muted small">temperature 留空时按 0.8 发送；其余留空则不发送该参数。Responses 接口只支持 temperature / top_p / max_tokens，penalty 与 top_k 仅对 Chat Completions 生效。</p>
+        </details>
+
+        <p class="muted small">DeepSeek / 各类中转站用 Chat Completions；仅支持 Responses 的上游（如部分 OpenAI 代理）选 Responses。保存后无需重启即可生效。</p>
         <button class="btn primary" id="btn-save-config">保存配置</button>
+
+        <div class="profile-block">
+          <div class="panel-title">配置方案</div>
+          <div class="profile-row">
+            <select id="cfg-profile-select"><option value="">— 已存方案 —</option></select>
+            <button class="btn small" id="btn-profile-apply">应用</button>
+            <button class="btn small" id="btn-profile-save">存为方案</button>
+            <button class="btn small ghost" id="btn-profile-delete">删除</button>
+          </div>
+          <p class="muted small" id="profile-status">把当前 Base URL / 模型 / Key / 采样参数存成方案，多套 API 一键切换。</p>
+        </div>
       </div>
 
       <div class="tab-page" id="tab-prompts">
-        <label>基础 System Prompt（留空 = 使用内置默认；填写后完全替换）
+        <label>基础 System Prompt<span class="label-hint">留空 = 使用内置默认；填写后完全替换</span>
           <textarea id="pr-system" rows="6" placeholder="留空使用内置默认提示词"></textarea>
         </label>
         <details class="default-prompt-fold">
           <summary>查看内置默认提示词（当前生效中，因为自定义为空）</summary>
           <textarea id="pr-system-default" rows="6" readonly></textarea>
         </details>
-        <label>自定义追加提示词（无限制提示词，由你自行填写）
+        <label>自定义追加提示词<span class="label-hint">无限制提示词，由你自行填写</span>
           <textarea id="pr-unrestricted" rows="4" placeholder="留空 = 不追加任何内容。此处内容会原样追加到 system prompt 末尾，效果与合规性由你自行决定并承担。"></textarea>
         </label>
         <p class="muted small">⚠ 追加内容由用户自行填写并承担责任，默认为空。追加内容会拼在（默认或自定义的）基础提示词之后。</p>
         <button class="btn primary" id="btn-save-prompts">保存提示词</button>
+      </div>
+
+      <div class="tab-page" id="tab-tavern">
+        <div class="tavern-toolbar">
+          <input type="file" id="preset-file" accept=".json,application/json" class="hidden">
+          <button class="btn small" id="btn-import-preset">📥 导入预设</button>
+          <button class="btn small ghost hidden" id="btn-tavern-all-on">全部启用</button>
+          <button class="btn small ghost hidden" id="btn-tavern-all-off">全部停用</button>
+          <button class="btn small ghost hidden" id="btn-tavern-clear">清除预设</button>
+        </div>
+        <p class="muted small" id="preset-import-status">未导入预设。导入 SillyTavern 聊天补全预设 JSON 后，可在此逐条开关、点击条目编辑内容，改动自动保存并拼入 system prompt。</p>
+        <div id="tavern-list"></div>
+        <p class="muted small">拼接顺序：基础提示词 → 此处启用的条目（按列表顺序）→ 追加提示词。📌 marker 占位条目不参与拼接。宏 {{user}}→玩家、{{char}}→旁白，STscript 变量语法自动清理。</p>
       </div>
 
       <div class="tab-page" id="tab-worldbook">
@@ -139,6 +194,19 @@
         <textarea id="wb-editor" rows="14" spellcheck="false" class="mono"></textarea>
         <p class="muted small">世界书 JSON：teams[].{name,cn,city,keywords,style,players[],foreign_players[]}。按阶段/关键词自动注入 prompt。队伍数：<span id="wb-stats"></span></p>
         <button class="btn primary" id="btn-save-worldbook">保存世界书</button>
+      </div>
+    </div>
+
+    <!-- 方案命名 -->
+    <div class="modal" id="modal-profile">
+      <div class="modal-head"><h3>存为配置方案</h3><button class="btn small ghost" data-close>✕</button></div>
+      <label>方案名称
+        <input id="profile-name-input" type="text" placeholder="如：DeepSeek 主力 / 中转站A" maxlength="50">
+      </label>
+      <p class="muted small">同名方案会被覆盖。</p>
+      <div class="form-ops">
+        <button class="btn" data-close>取消</button>
+        <button class="btn primary" id="btn-profile-confirm">保存</button>
       </div>
     </div>
 
@@ -178,5 +246,22 @@
   <script src="/js/game.js"></script>
   <script src="/js/native.js"></script>
   <script src="/js/app.js"></script>
+  <script>
+    // 移动端侧栏抽屉开关（纯展示层，不影响游戏逻辑）
+    (function () {
+      var toggle = document.getElementById('btn-stats-toggle');
+      var sidebar = document.getElementById('sidebar');
+      var backdrop = document.getElementById('sidebar-backdrop');
+      if (!toggle || !sidebar) return;
+      toggle.addEventListener('click', function () {
+        sidebar.classList.toggle('open');
+        if (backdrop) backdrop.classList.toggle('show', sidebar.classList.contains('open'));
+      });
+      if (backdrop) backdrop.addEventListener('click', function () {
+        sidebar.classList.remove('open');
+        backdrop.classList.remove('show');
+      });
+    })();
+  </script>
 </body>
 </html>

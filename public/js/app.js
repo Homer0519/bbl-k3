@@ -116,6 +116,18 @@ function bindModals() {
     if (v) $('#cfg-model').value = v;
   };
   $('#btn-save-prompts').onclick = savePrompts;
+  $('#btn-profile-save').onclick = () => {
+    $('#profile-name-input').value = $('#cfg-profile-select').value || '';
+    BBL.ui.showModal('profile');
+  };
+  $('#btn-profile-confirm').onclick = saveProfileAs;
+  $('#btn-profile-apply').onclick = applyProfile;
+  $('#btn-profile-delete').onclick = deleteProfile;
+  $('#btn-import-preset').onclick = () => $('#preset-file').click();
+  $('#preset-file').onchange = importTavernPreset;
+  $('#btn-tavern-all-on').onclick = () => tavernSetAll(true);
+  $('#btn-tavern-all-off').onclick = () => tavernSetAll(false);
+  $('#btn-tavern-clear').onclick = clearTavernPreset;
   $('#wb-select').onchange = loadWorldbookEditor;
   $('#btn-save-worldbook').onclick = saveWorldbook;
   $('#btn-refresh-saves').onclick = refreshSaves;
@@ -523,18 +535,17 @@ async function openSettingsModal(tab) {
 
   // LLM 配置
   const r = await (await fetch('/api/config')).json();
-  if (r.success) {
-    $('#cfg-baseurl').value = r.config.base_url || '';
-    $('#cfg-model').value = r.config.model || '';
-    $('#cfg-apikey').value = r.config.api_key_masked || '';
-    $('#cfg-apikey').placeholder = r.config.has_api_key ? '已配置（保持不变请勿修改）' : 'sk-...';
-  }
+  if (r.success) fillConfigForm(r.config);
+  await loadProfiles();
 
   // 自定义提示词 + 内置默认（供查看）
   const p = await (await fetch('/api/prompts/custom')).json();
   if (p.success) {
     $('#pr-system').value = p.prompts.system_prompt || '';
     $('#pr-unrestricted').value = p.prompts.unrestricted_prompt || '';
+    tavernPreset = (p.prompts.tavern_preset && Array.isArray(p.prompts.tavern_preset.prompts))
+      ? normalizeTavernPreset(p.prompts.tavern_preset) : null;
+    renderTavernList();
   }
   const d = await (await fetch('/api/prompts/default')).json();
   if (d.success && d.prompts.system_prompt) {
@@ -616,11 +627,8 @@ async function fetchModels() {
 }
 
 async function saveConfig() {
-  const body = {
-    base_url: $('#cfg-baseurl').value.trim(),
-    model: $('#cfg-model').value.trim(),
-    api_key: $('#cfg-apikey').value.trim()
-  };
+  const body = currentConfigDraft();
+  if (!body) return;
   const r = await (await fetch('/api/config', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -631,6 +639,109 @@ async function saveConfig() {
     BBL.ui.toast('配置已保存');
   } else {
     BBL.ui.toast('保存失败：' + (r.error || ''));
+  }
+}
+
+// 读取当前表单为配置对象（采样参数：空串→清除，非法数字→报错返回 null）
+function currentConfigDraft() {
+  const body = {
+    base_url: $('#cfg-baseurl').value.trim(),
+    model: $('#cfg-model').value.trim(),
+    api_key: $('#cfg-apikey').value.trim(),
+    api_type: $('#cfg-api-type').value
+  };
+  const SAMPLING = [['#cfg-temperature', 'temperature'], ['#cfg-top-p', 'top_p'], ['#cfg-top-k', 'top_k'],
+    ['#cfg-presence', 'presence_penalty'], ['#cfg-frequency', 'frequency_penalty'], ['#cfg-max-tokens', 'max_tokens']];
+  for (const [sel, key] of SAMPLING) {
+    const raw = $(sel).value.trim();
+    if (raw === '') { body[key] = ''; continue; }
+    const n = Number(raw);
+    if (!Number.isFinite(n)) { BBL.ui.toast(`采样参数 ${key} 不是有效数字`); return null; }
+    body[key] = n;
+  }
+  return body;
+}
+
+// 把 config 视图填回表单
+function fillConfigForm(c) {
+  $('#cfg-baseurl').value = c.base_url || '';
+  $('#cfg-model').value = c.model || '';
+  $('#cfg-api-type').value = c.api_type === 'responses' ? 'responses' : 'chat_completions';
+  $('#cfg-apikey').value = c.api_key_masked || '';
+  $('#cfg-apikey').placeholder = c.has_api_key ? '已配置（保持不变请勿修改）' : 'sk-...';
+  const SAMPLING = [['#cfg-temperature', 'temperature'], ['#cfg-top-p', 'top_p'], ['#cfg-top-k', 'top_k'],
+    ['#cfg-presence', 'presence_penalty'], ['#cfg-frequency', 'frequency_penalty'], ['#cfg-max-tokens', 'max_tokens']];
+  for (const [sel, key] of SAMPLING) {
+    $(sel).value = typeof c[key] === 'number' ? String(c[key]) : '';
+  }
+}
+
+async function loadProfiles() {
+  const sel = $('#cfg-profile-select');
+  const r = await (await fetch('/api/config/profiles')).json();
+  sel.innerHTML = '<option value="">— 已存方案 —</option>';
+  if (r.success) {
+    for (const p of r.profiles) {
+      const o = document.createElement('option');
+      o.value = p.name;
+      o.textContent = `${p.name}（${p.model || '?'} @ ${(p.base_url || '').replace(/^https?:\/\//, '').slice(0, 28)}）`;
+      sel.appendChild(o);
+    }
+    $('#profile-status').textContent = r.profiles.length
+      ? `已存 ${r.profiles.length} 套方案。选中后「应用」立即生效。`
+      : '把当前 Base URL / 模型 / Key / 采样参数存成方案，多套 API 一键切换。';
+  }
+}
+
+async function saveProfileAs() {
+  const name = $('#profile-name-input').value.trim();
+  if (!name) { BBL.ui.toast('请填写方案名称'); return; }
+  const draft = currentConfigDraft();
+  if (!draft) return;
+  const r = await (await fetch('/api/config/profiles/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...draft, name })
+  })).json();
+  if (r.success) {
+    document.querySelector('#modal-profile [data-close]').click();
+    await loadProfiles();
+    $('#cfg-profile-select').value = name;
+    BBL.ui.toast(`方案「${name}」已保存`);
+  } else {
+    BBL.ui.toast('保存失败：' + (r.error || ''));
+  }
+}
+
+async function applyProfile() {
+  const name = $('#cfg-profile-select').value;
+  if (!name) { BBL.ui.toast('先选择一个方案'); return; }
+  const r = await (await fetch('/api/config/profiles/apply', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  })).json();
+  if (r.success) {
+    fillConfigForm(r.config);
+    BBL.app.mode = r.config.has_api_key ? 'llm' : 'trial';
+    BBL.ui.toast(`已切换到「${name}」`);
+  } else {
+    BBL.ui.toast('应用失败：' + (r.error || ''));
+  }
+}
+
+async function deleteProfile() {
+  const name = $('#cfg-profile-select').value;
+  if (!name) { BBL.ui.toast('先选择一个方案'); return; }
+  if (!confirm(`删除方案「${name}」？（不影响当前生效配置）`)) return;
+  const r = await (await fetch('/api/config/profiles/delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  })).json();
+  if (r.success) {
+    await loadProfiles();
+    BBL.ui.toast('方案已删除');
   }
 }
 
@@ -645,6 +756,177 @@ async function savePrompts() {
     body: JSON.stringify(body)
   })).json();
   BBL.ui.toast(r.success ? '提示词已保存' : '保存失败：' + (r.error || ''));
+}
+
+// ============================================================
+// 酒馆（SillyTavern）预设管理器
+// 参考 SillyTavern Prompt Manager：预设 JSON 含 prompts[]（identifier/name/
+// role/content/marker）与 prompt_order[]（真实启用状态与顺序）。
+// 导入后整份预设存入 prompts.json 的 tavern_preset 字段；逐条开关/编辑即时保存；
+// 最终 system prompt = 基础 + 启用条目（按序拼接，marker 跳过）+ 追加提示词，
+// 拼接在服务端 buildSystemPrompt / native.js 本地完成。
+// ============================================================
+
+let tavernPreset = null; // 当前载入的酒馆预设（就地修改后整体保存）
+
+// 归一化：以 prompts[] 数组顺序为准（即酒馆里的可见/拖拽顺序），
+// prompt_order 只作为启用状态的来源；缺省条目保持预设自带 enabled 或默认启用
+function normalizeTavernPreset(preset) {
+  const enabledMap = new Map();
+  for (const po of (preset.prompt_order || [])) {
+    for (const o of (po && po.order) || []) {
+      if (o && o.identifier && !enabledMap.has(o.identifier)) {
+        enabledMap.set(o.identifier, o.enabled !== false);
+      }
+    }
+  }
+  const order = [];
+  for (const p of preset.prompts) {
+    if (!p || !p.identifier) continue;
+    const enabled = enabledMap.has(p.identifier)
+      ? enabledMap.get(p.identifier)
+      : p.enabled !== false;
+    order.push({ identifier: p.identifier, enabled });
+  }
+  preset.prompt_order = [{ character_id: 100001, order }];
+  return preset;
+}
+
+function tavernOrder() { return tavernPreset.prompt_order[0].order; }
+function tavernById() {
+  const byId = {};
+  for (const p of tavernPreset.prompts) if (p && p.identifier) byId[p.identifier] = p;
+  return byId;
+}
+
+function renderTavernList() {
+  const list = $('#tavern-list');
+  list.innerHTML = '';
+  const has = !!tavernPreset;
+  for (const id of ['#btn-tavern-all-on', '#btn-tavern-all-off', '#btn-tavern-clear']) {
+    $(id).classList.toggle('hidden', !has);
+  }
+  if (!has) return;
+
+  const byId = tavernById();
+  let enabledCount = 0;
+  for (const o of tavernOrder()) {
+    const p = byId[o.identifier];
+    if (!p) continue;
+    if (o.enabled && !p.marker) enabledCount++;
+
+    const row = document.createElement('div');
+    row.className = 'tavern-row' + (o.enabled ? '' : ' off') + (p.marker ? ' marker' : '');
+
+    const toggle = document.createElement('input');
+    toggle.type = 'checkbox';
+    toggle.checked = !!o.enabled;
+    toggle.className = 'tavern-toggle';
+    toggle.title = p.marker ? 'marker 占位条目（内容为空，不参与拼接）' : '启用/停用';
+    toggle.onchange = () => {
+      o.enabled = toggle.checked;
+      row.classList.toggle('off', !o.enabled);
+      saveTavernPreset();
+      updateTavernStatus();
+    };
+
+    const name = document.createElement('span');
+    name.className = 'tavern-name';
+    name.textContent = (p.marker ? '📌 ' : '') + (p.name || p.identifier);
+
+    const role = document.createElement('span');
+    role.className = 'tavern-role';
+    role.textContent = p.role || 'system';
+
+    const len = document.createElement('span');
+    len.className = 'tavern-len muted small';
+    len.textContent = (p.content || '').trim().length + ' 字';
+
+    row.append(toggle, name, role, len);
+
+    // 点击名字展开/收起编辑框
+    const editor = document.createElement('textarea');
+    editor.className = 'tavern-editor hidden';
+    editor.rows = 6;
+    editor.spellcheck = false;
+    editor.value = p.content || '';
+    let t;
+    editor.oninput = () => {
+      p.content = editor.value;
+      len.textContent = editor.value.trim().length + ' 字';
+      clearTimeout(t);
+      t = setTimeout(saveTavernPreset, 600);
+    };
+    name.onclick = () => editor.classList.toggle('hidden');
+
+    list.append(row, editor);
+  }
+  updateTavernStatus();
+}
+
+function updateTavernStatus() {
+  if (!tavernPreset) return;
+  const total = tavernOrder().length;
+  const on = tavernOrder().filter(o => o.enabled).length;
+  $('#preset-import-status').textContent =
+    `已载入「${tavernPreset.name || '未命名预设'}」：共 ${total} 条，启用 ${on} 条。改动自动保存。`;
+}
+
+async function saveTavernPreset() {
+  if (!tavernPreset) return;
+  const r = await (await fetch('/api/prompts/custom', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tavern_preset: tavernPreset })
+  })).json();
+  if (!r.success) BBL.ui.toast('预设保存失败：' + (r.error || ''));
+}
+
+function tavernSetAll(on) {
+  if (!tavernPreset) return;
+  for (const o of tavernOrder()) o.enabled = on;
+  renderTavernList();
+  saveTavernPreset();
+}
+
+async function clearTavernPreset() {
+  if (!tavernPreset) return;
+  if (!confirm('清除已导入的酒馆预设？（不影响基础/追加提示词）')) return;
+  tavernPreset = null;
+  await fetch('/api/prompts/custom', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tavern_preset: null })
+  });
+  renderTavernList();
+  $('#preset-import-status').textContent = '已清除。可重新导入 SillyTavern 预设 JSON。';
+  BBL.ui.toast('酒馆预设已清除');
+}
+
+async function importTavernPreset(e) {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  const status = $('#preset-import-status');
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    status.textContent = '文件过大（>2MB），不像预设文件';
+    return;
+  }
+  let preset;
+  try {
+    preset = JSON.parse(await file.text());
+  } catch {
+    status.textContent = '解析失败：不是有效的 JSON 文件';
+    return;
+  }
+  if (!preset || typeof preset !== 'object' || !Array.isArray(preset.prompts) || preset.prompts.length === 0) {
+    status.textContent = '未识别：该 JSON 不含 prompts[]（仅支持聊天补全「提示词管理器」预设）';
+    return;
+  }
+  tavernPreset = normalizeTavernPreset(preset);
+  renderTavernList();
+  await saveTavernPreset();
+  BBL.ui.toast('预设已导入，可逐条开关');
 }
 
 async function loadWorldbookEditor() {

@@ -39,6 +39,50 @@ BBL.NATIVE = false;
     return key.slice(0, 4) + '****' + key.slice(-4);
   }
 
+  // 采样参数键（与 server.js SAMPLING_KEYS 一致）
+  const SAMPLING_KEYS = ['temperature', 'top_p', 'top_k', 'presence_penalty', 'frequency_penalty', 'max_tokens'];
+
+  // 组装 config 的公开视图（脱敏 key + 采样参数）
+  function configView(cfg) {
+    const sampling = {};
+    for (const k of SAMPLING_KEYS) if (typeof cfg[k] === 'number') sampling[k] = cfg[k];
+    return { base_url: cfg.base_url, model: cfg.model, api_type: cfg.api_type === 'responses' ? 'responses' : 'chat_completions', ...sampling, api_key_masked: maskKey(cfg.api_key), has_api_key: !!cfg.api_key };
+  }
+
+  // 酒馆预设拼接（与 server.js 同款逻辑）
+  function convertTavernMacros(text) {
+    return String(text)
+      .replace(/\{\{user\}\}/gi, '玩家')
+      .replace(/\{\{char\}\}/gi, '旁白')
+      .replace(/\{\{\s*setvar::[^:]+::([\s\S]*?)\}\}/gi, '$1')
+      .replace(/\{\{\s*getvar::[^}]*\}\}/gi, '')
+      .replace(/\{\{\s*trim\s*\}\}/gi, '')
+      .replace(/\{\{\s*\/\/[\s\S]*?\}\}/g, '');
+  }
+
+  function composeTavernSection(preset) {
+    if (!preset || typeof preset !== 'object' || !Array.isArray(preset.prompts)) return '';
+    const byId = {};
+    for (const p of preset.prompts) if (p && p.identifier) byId[p.identifier] = p;
+    const order = preset.prompt_order && preset.prompt_order[0] && Array.isArray(preset.prompt_order[0].order)
+      ? preset.prompt_order[0].order : null;
+    const parts = [];
+    const seen = new Set();
+    const push = (p) => {
+      if (!p || p.marker || typeof p.content !== 'string') return;
+      const c = p.content.trim();
+      if (!c || seen.has(c)) return;
+      seen.add(c);
+      parts.push(convertTavernMacros(c));
+    };
+    if (order) {
+      for (const o of order) { if (o && o.enabled !== false) push(byId[o.identifier]); }
+    } else {
+      for (const p of preset.prompts) { if (p.enabled !== false) push(p); }
+    }
+    return parts.join('\n\n');
+  }
+
   function loadConfig() {
     return LS.get('bblv1_config', { api_key: '', base_url: 'https://api.deepseek.com/v1', model: 'deepseek-chat', temperature: 0.8 });
   }
@@ -77,22 +121,58 @@ BBL.NATIVE = false;
     if (!http) throw new Error('CapacitorHttp 不可用');
     const cfg = loadConfig();
     if (!cfg.api_key || !cfg.base_url) throw new Error('LLM 未配置：请在设置中填写 api_key / base_url');
-    const url = String(cfg.base_url).replace(/\/+$/, '') + '/chat/completions';
+    const base = String(cfg.base_url).replace(/\/+$/, '');
+    const isResponses = cfg.api_type === 'responses';
+    const url = base + (isResponses ? '/responses' : '/chat/completions');
+    // 采样参数：仅发送显式设置的项
+    const num = (v) => typeof v === 'number' && Number.isFinite(v);
+    const sp = { temperature: cfg.temperature ?? 0.8 };
+    if (num(cfg.top_p)) sp.top_p = cfg.top_p;
+    if (num(cfg.max_tokens)) sp[isResponses ? 'max_output_tokens' : 'max_tokens'] = cfg.max_tokens;
+    if (!isResponses) {
+      if (num(cfg.top_k)) sp.top_k = cfg.top_k;
+      if (num(cfg.presence_penalty)) sp.presence_penalty = cfg.presence_penalty;
+      if (num(cfg.frequency_penalty)) sp.frequency_penalty = cfg.frequency_penalty;
+    }
     const r = await http.post({
       url,
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.api_key },
-      data: {
+      data: isResponses ? {
         model: cfg.model,
         stream: false,
-        temperature: cfg.temperature ?? 0.8,
+        ...sp,
+        input: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt }
+        ]
+      } : {
+        model: cfg.model,
+        stream: false,
+        ...sp,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt }
         ]
       }
     });
-    const content = r.data && r.data.choices && r.data.choices[0]
-      && r.data.choices[0].message && r.data.choices[0].message.content;
+    let content = '';
+    if (isResponses) {
+      content = typeof r.data?.output_text === 'string' && r.data.output_text ? r.data.output_text : '';
+      if (!content && Array.isArray(r.data?.output)) {
+        const parts = [];
+        for (const item of r.data.output) {
+          if (item?.type === 'message' && Array.isArray(item.content)) {
+            for (const c of item.content) {
+              if ((c?.type === 'output_text' || c?.type === 'text') && typeof c.text === 'string') parts.push(c.text);
+            }
+          }
+        }
+        content = parts.join('');
+      }
+    } else {
+      content = r.data && r.data.choices && r.data.choices[0]
+        && r.data.choices[0].message && r.data.choices[0].message.content;
+    }
     if (!content) throw new Error('LLM 返回为空');
     return content;
   }
@@ -149,7 +229,7 @@ BBL.NATIVE = false;
     // ---------- 配置 ----------
     if (path === '/api/config' && method === 'GET') {
       const cfg = loadConfig();
-      return jsonResponse({ success: true, config: { base_url: cfg.base_url, model: cfg.model, api_key_masked: maskKey(cfg.api_key), has_api_key: !!cfg.api_key } });
+      return jsonResponse({ success: true, config: configView(cfg) });
     }
     if (path === '/api/config' && method === 'POST') {
       const cfg = loadConfig();
@@ -159,8 +239,64 @@ BBL.NATIVE = false;
         const v = body.api_key.trim();
         if (!v.includes('****')) cfg.api_key = v; // 掩码回传忽略
       }
+      if (body.api_type === 'responses' || body.api_type === 'chat_completions') cfg.api_type = body.api_type;
+      for (const k of SAMPLING_KEYS) {
+        const v = body[k];
+        if (typeof v === 'number' && Number.isFinite(v)) cfg[k] = v;
+        else if (v === '' || v === null) delete cfg[k];
+      }
       LS.set('bblv1_config', cfg);
-      return jsonResponse({ success: true, config: { base_url: cfg.base_url, model: cfg.model, api_key_masked: maskKey(cfg.api_key), has_api_key: !!cfg.api_key } });
+      return jsonResponse({ success: true, config: configView(cfg) });
+    }
+
+    // ---------- API 配置方案 ----------
+    const profileView = (p) => {
+      const sampling = {};
+      for (const k of SAMPLING_KEYS) if (typeof p[k] === 'number') sampling[k] = p[k];
+      return { name: p.name, base_url: p.base_url, model: p.model, api_type: p.api_type === 'responses' ? 'responses' : 'chat_completions', ...sampling, api_key_masked: maskKey(p.api_key), has_api_key: !!p.api_key };
+    };
+    if (path === '/api/config/profiles' && method === 'GET') {
+      const cfg = loadConfig();
+      return jsonResponse({ success: true, profiles: (cfg.profiles || []).map(profileView) });
+    }
+    if (path === '/api/config/profiles/save' && method === 'POST') {
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      if (!name || name.length > 50) return jsonResponse({ success: false, error: '方案名无效（1-50 字符）' }, 400);
+      const cfg = loadConfig();
+      if (!Array.isArray(cfg.profiles)) cfg.profiles = [];
+      const idx = cfg.profiles.findIndex(p => p.name === name);
+      const p = { ...(idx >= 0 ? cfg.profiles[idx] : {}) };
+      p.name = name;
+      if (typeof body.base_url === 'string') p.base_url = body.base_url.trim();
+      if (typeof body.model === 'string') p.model = body.model.trim();
+      if (body.api_type === 'responses' || body.api_type === 'chat_completions') p.api_type = body.api_type;
+      if (typeof body.api_key === 'string') { const v = body.api_key.trim(); if (!v.includes('****')) p.api_key = v; }
+      for (const k of SAMPLING_KEYS) {
+        const v = body[k];
+        if (typeof v === 'number' && Number.isFinite(v)) p[k] = v;
+        else if (v === '' || v === null) delete p[k];
+      }
+      cfg.profiles[idx >= 0 ? idx : cfg.profiles.length] = p;
+      LS.set('bblv1_config', cfg);
+      return jsonResponse({ success: true, profiles: cfg.profiles.map(profileView) });
+    }
+    if (path === '/api/config/profiles/delete' && method === 'POST') {
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      const cfg = loadConfig();
+      cfg.profiles = (cfg.profiles || []).filter(p => p.name !== name);
+      LS.set('bblv1_config', cfg);
+      return jsonResponse({ success: true, profiles: cfg.profiles.map(profileView) });
+    }
+    if (path === '/api/config/profiles/apply' && method === 'POST') {
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      const cfg = loadConfig();
+      const p = (cfg.profiles || []).find(p => p.name === name);
+      if (!p) return jsonResponse({ success: false, error: '方案不存在：' + name }, 404);
+      for (const k of ['base_url', 'model', 'api_type', 'api_key', ...SAMPLING_KEYS]) {
+        if (p[k] === undefined) delete cfg[k]; else cfg[k] = p[k];
+      }
+      LS.set('bblv1_config', cfg);
+      return jsonResponse({ success: true, config: configView(cfg) });
     }
 
     // ---------- 提示词 ----------
@@ -175,6 +311,10 @@ BBL.NATIVE = false;
       const p = LS.get('bblv1_prompts', { system_prompt: '', unrestricted_prompt: '' });
       if (typeof body.system_prompt === 'string') p.system_prompt = body.system_prompt;
       if (typeof body.unrestricted_prompt === 'string') p.unrestricted_prompt = body.unrestricted_prompt;
+      if (body.tavern_preset === null) delete p.tavern_preset;
+      else if (body.tavern_preset && typeof body.tavern_preset === 'object' && !Array.isArray(body.tavern_preset)) {
+        p.tavern_preset = body.tavern_preset;
+      }
       LS.set('bblv1_prompts', p);
       return jsonResponse({ success: true, prompts: p });
     }
@@ -182,6 +322,8 @@ BBL.NATIVE = false;
       const d = await loadDefaults();
       const p = LS.get('bblv1_prompts', { system_prompt: '', unrestricted_prompt: '' });
       let sys = (p.system_prompt && p.system_prompt.trim()) ? p.system_prompt : d.system_prompt;
+      const tavern = composeTavernSection(p.tavern_preset);
+      if (tavern) sys += '\n\n' + tavern;
       if (p.unrestricted_prompt && p.unrestricted_prompt.trim()) sys += '\n\n' + p.unrestricted_prompt.trim();
       return jsonResponse({ success: true, system_prompt: sys });
     }

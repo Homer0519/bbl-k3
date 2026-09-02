@@ -30,6 +30,8 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1   # 仅开发用依赖，CI 不需要浏览器
 
       - name: Sync web assets to Android
         run: npm run cap:sync
@@ -43,12 +45,12 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/debug/app-debug.apk "dist/BasketballLife-v${GITHUB_REF_NAME}-debug.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "dist/BasketballLifeK3-v${GITHUB_REF_NAME}-debug.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: basketball-life-apk
+          name: bbl-k3-apk
           path: dist/*.apk
           retention-days: 30
 

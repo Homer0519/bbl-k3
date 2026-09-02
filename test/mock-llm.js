@@ -198,6 +198,60 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Responses API 端点（POST /v1/responses）
+  if (req.method === 'POST' && req.url.includes('/responses')) {
+    let raw = '';
+    req.on('data', c => raw += c);
+    req.on('end', () => {
+      const body = JSON.parse(raw || '{}');
+      const auth = req.headers['authorization'] || '';
+      const validKey = process.env.MOCK_API_KEY || 'sk-mock-test-key';
+      if (auth !== `Bearer ${validKey}`) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: { message: 'Invalid API key' } }));
+        return;
+      }
+      const content = buildContent({ messages: body.input || [] });
+
+      if (!body.stream) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          id: 'resp-mock-' + Date.now(),
+          object: 'response',
+          model: body.model || 'mock-model',
+          output: [{
+            type: 'message', role: 'assistant',
+            content: [{ type: 'output_text', text: content }]
+          }],
+          usage: { input_tokens: 100, output_tokens: 500 }
+        }));
+        return;
+      }
+
+      // 流式：Responses API 事件序列
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      });
+      const CHUNK = 24, DELAY = 12;
+      let i = 0;
+      const send = (obj) => res.write(`data: ${JSON.stringify(obj)}\n\n`);
+      send({ type: 'response.created', response: { id: 'resp-mock' } });
+      const timer = setInterval(() => {
+        if (i >= content.length) {
+          clearInterval(timer);
+          send({ type: 'response.completed', response: { id: 'resp-mock', status: 'completed' } });
+          res.end();
+          return;
+        }
+        send({ type: 'response.output_text.delta', delta: content.slice(i, i + CHUNK) });
+        i += CHUNK;
+      }, DELAY);
+    });
+    return;
+  }
+
   if (req.method !== 'POST' || !req.url.includes('/chat/completions')) {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'not found' }));

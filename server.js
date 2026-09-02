@@ -30,7 +30,7 @@ function loadConfig() {
   try {
     return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
   } catch {
-    return { api_key: '', base_url: 'https://api.deepseek.com/v1', model: 'deepseek-chat' };
+    return { api_key: '', base_url: 'https://api.deepseek.com/v1', model: 'deepseek-chat', api_type: 'chat_completions' };
   }
 }
 
@@ -44,13 +44,19 @@ function maskApiKey(key) {
   return key.slice(0, 4) + '****' + key.slice(-4);
 }
 
+const SAMPLING_KEYS = ['temperature', 'top_p', 'top_k', 'presence_penalty', 'frequency_penalty', 'max_tokens'];
+
 app.get('/api/config', (req, res) => {
   const cfg = loadConfig();
+  const sampling = {};
+  for (const k of SAMPLING_KEYS) if (typeof cfg[k] === 'number') sampling[k] = cfg[k];
   res.json({
     success: true,
     config: {
       base_url: cfg.base_url,
       model: cfg.model,
+      api_type: cfg.api_type === 'responses' ? 'responses' : 'chat_completions',
+      ...sampling,
       api_key_masked: maskApiKey(cfg.api_key),
       has_api_key: Boolean(cfg.api_key)
     }
@@ -59,9 +65,16 @@ app.get('/api/config', (req, res) => {
 
 app.post('/api/config', (req, res) => {
   const cfg = loadConfig();
-  const { base_url, model, api_key } = req.body || {};
+  const { base_url, model, api_key, api_type } = req.body || {};
   if (typeof base_url === 'string' && base_url.trim()) cfg.base_url = base_url.trim();
   if (typeof model === 'string' && model.trim()) cfg.model = model.trim();
+  if (api_type === 'responses' || api_type === 'chat_completions') cfg.api_type = api_type;
+  // 采样参数：数字→设置；空串/null→清除（回退上游默认）
+  for (const k of SAMPLING_KEYS) {
+    const v = req.body ? req.body[k] : undefined;
+    if (typeof v === 'number' && Number.isFinite(v)) cfg[k] = v;
+    else if (v === '' || v === null) delete cfg[k];
+  }
   if (typeof api_key === 'string') {
     const v = api_key.trim();
     // 掩码回传（前端未修改直接保存）忽略；空字符串清除；其他值设置
@@ -69,38 +82,184 @@ app.post('/api/config', (req, res) => {
   }
   try {
     saveConfig(cfg);
-    res.json({ success: true, config: { base_url: cfg.base_url, model: cfg.model, api_key_masked: maskApiKey(cfg.api_key), has_api_key: Boolean(cfg.api_key) } });
+    res.json({ success: true, config: { base_url: cfg.base_url, model: cfg.model, api_type: cfg.api_type === 'responses' ? 'responses' : 'chat_completions', api_key_masked: maskApiKey(cfg.api_key), has_api_key: Boolean(cfg.api_key) } });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
 });
 
 // ============================================================
-// LLM 调用 (OpenAI 兼容)
+// API 配置方案（多套 API 设置，一键切换）
+// 存储于 config.json 的 profiles: [{name, base_url, model, api_type, api_key, ...sampling}]
 // ============================================================
+
+function getProfiles(cfg) {
+  return Array.isArray(cfg.profiles) ? cfg.profiles : [];
+}
+
+function profileView(p) {
+  const sampling = {};
+  for (const k of SAMPLING_KEYS) if (typeof p[k] === 'number') sampling[k] = p[k];
+  return {
+    name: p.name, base_url: p.base_url, model: p.model,
+    api_type: p.api_type === 'responses' ? 'responses' : 'chat_completions',
+    ...sampling,
+    api_key_masked: maskApiKey(p.api_key),
+    has_api_key: Boolean(p.api_key)
+  };
+}
+
+// 从请求体提取方案字段（key 掩码回传时保留原值）
+function extractProfile(body, existing) {
+  const p = { ...(existing || {}) };
+  p.name = body.name;
+  if (typeof body.base_url === 'string') p.base_url = body.base_url.trim();
+  if (typeof body.model === 'string') p.model = body.model.trim();
+  if (body.api_type === 'responses' || body.api_type === 'chat_completions') p.api_type = body.api_type;
+  if (typeof body.api_key === 'string') {
+    const v = body.api_key.trim();
+    if (!v.includes('****')) p.api_key = v;
+  }
+  for (const k of SAMPLING_KEYS) {
+    const v = body[k];
+    if (typeof v === 'number' && Number.isFinite(v)) p[k] = v;
+    else if (v === '' || v === null) delete p[k];
+  }
+  return p;
+}
+
+app.get('/api/config/profiles', (req, res) => {
+  const cfg = loadConfig();
+  res.json({ success: true, profiles: getProfiles(cfg).map(profileView) });
+});
+
+app.post('/api/config/profiles/save', (req, res) => {
+  const body = req.body || {};
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  if (!name || name.length > 50) return res.status(400).json({ success: false, error: '方案名无效（1-50 字符）' });
+  const cfg = loadConfig();
+  if (!Array.isArray(cfg.profiles)) cfg.profiles = [];
+  const idx = cfg.profiles.findIndex(p => p.name === name);
+  cfg.profiles[idx >= 0 ? idx : cfg.profiles.length] = extractProfile(body, idx >= 0 ? cfg.profiles[idx] : null);
+  saveConfig(cfg);
+  res.json({ success: true, profiles: cfg.profiles.map(profileView) });
+});
+
+app.post('/api/config/profiles/delete', (req, res) => {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+  const cfg = loadConfig();
+  cfg.profiles = getProfiles(cfg).filter(p => p.name !== name);
+  saveConfig(cfg);
+  res.json({ success: true, profiles: cfg.profiles.map(profileView) });
+});
+
+// 应用方案：复制为当前生效配置（含真实 api_key）
+app.post('/api/config/profiles/apply', (req, res) => {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+  const cfg = loadConfig();
+  const p = getProfiles(cfg).find(p => p.name === name);
+  if (!p) return res.status(404).json({ success: false, error: '方案不存在：' + name });
+  for (const k of ['base_url', 'model', 'api_type', 'api_key', ...SAMPLING_KEYS]) {
+    if (p[k] === undefined) delete cfg[k]; else cfg[k] = p[k];
+  }
+  saveConfig(cfg);
+  const sampling = {};
+  for (const k of SAMPLING_KEYS) if (typeof cfg[k] === 'number') sampling[k] = cfg[k];
+  res.json({
+    success: true,
+    config: {
+      base_url: cfg.base_url, model: cfg.model,
+      api_type: cfg.api_type === 'responses' ? 'responses' : 'chat_completions',
+      ...sampling,
+      api_key_masked: maskApiKey(cfg.api_key),
+      has_api_key: Boolean(cfg.api_key)
+    }
+  });
+});
+
+// ============================================================
+// LLM 调用 (OpenAI 兼容 Chat Completions / Responses API)
+// ============================================================
+
+// 采样参数：仅发送用户显式设置的项（0 也是有效值；未设置则让上游用默认值）
+// Responses API 只支持 temperature/top_p/max_output_tokens，penalty/top_k 仅 Chat Completions 发送
+function samplingParams(cfg, temperature, forResponses) {
+  const p = { temperature: temperature ?? cfg.temperature ?? 0.8 };
+  const num = (v) => typeof v === 'number' && Number.isFinite(v);
+  if (num(cfg.top_p)) p.top_p = cfg.top_p;
+  if (num(cfg.max_tokens)) p[forResponses ? 'max_output_tokens' : 'max_tokens'] = cfg.max_tokens;
+  if (!forResponses) {
+    if (num(cfg.top_k)) p.top_k = cfg.top_k;
+    if (num(cfg.presence_penalty)) p.presence_penalty = cfg.presence_penalty;
+    if (num(cfg.frequency_penalty)) p.frequency_penalty = cfg.frequency_penalty;
+  }
+  return p;
+}
+
+// 构造上游请求（两种 API 格式统一入口）
+function buildUpstream(cfg, prompt, systemPrompt, temperature, stream) {
+  const base = cfg.base_url.replace(/\/+$/, '');
+  const isResponses = cfg.api_type === 'responses';
+  const sp = samplingParams(cfg, temperature, isResponses);
+  if (isResponses) {
+    return {
+      url: base + '/responses',
+      body: {
+        model: cfg.model,
+        stream,
+        ...sp,
+        input: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt }
+        ]
+      }
+    };
+  }
+  return {
+    url: base + '/chat/completions',
+    body: {
+      model: cfg.model,
+      stream,
+      ...sp,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt }
+      ]
+    }
+  };
+}
+
+// 从 Responses API 的完整响应对象中提取文本
+function extractResponsesText(data) {
+  if (typeof data?.output_text === 'string' && data.output_text) return data.output_text;
+  if (Array.isArray(data?.output)) {
+    const parts = [];
+    for (const item of data.output) {
+      if (item?.type === 'message' && Array.isArray(item.content)) {
+        for (const c of item.content) {
+          if ((c?.type === 'output_text' || c?.type === 'text') && typeof c.text === 'string') parts.push(c.text);
+        }
+      }
+    }
+    if (parts.length) return parts.join('');
+  }
+  return '';
+}
 
 // _ll — 非流式调用（开局生成）
 async function _ll(prompt, systemPrompt, temperature) {
   const cfg = loadConfig();
   if (!cfg.api_key || !cfg.base_url) throw new Error('LLM 未配置：请在设置中填写 api_key / base_url');
 
-  const url = cfg.base_url.replace(/\/+$/, '') + '/chat/completions';
-  const resp = await fetch(url, {
+  const up = buildUpstream(cfg, prompt, systemPrompt, temperature, false);
+  const resp = await fetch(up.url, {
     method: 'POST',
     signal: AbortSignal.timeout(120000), // 防止上游挂起永久阻塞
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${cfg.api_key}`
     },
-    body: JSON.stringify({
-      model: cfg.model,
-      stream: false,
-      temperature: temperature ?? cfg.temperature ?? 0.8,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt }
-      ]
-    })
+    body: JSON.stringify(up.body)
   });
 
   if (!resp.ok) {
@@ -108,7 +267,9 @@ async function _ll(prompt, systemPrompt, temperature) {
     throw new Error(`LLM HTTP ${resp.status}: ${body.slice(0, 300)}`);
   }
   const data = await resp.json();
-  const content = data?.choices?.[0]?.message?.content;
+  const content = cfg.api_type === 'responses'
+    ? extractResponsesText(data)
+    : data?.choices?.[0]?.message?.content;
   if (!content) throw new Error('LLM 返回为空');
   return content;
 }
@@ -119,24 +280,16 @@ async function* _ls(prompt, systemPrompt, temperature, externalSignal) {
   const cfg = loadConfig();
   if (!cfg.api_key || !cfg.base_url) throw new Error('LLM 未配置：请在设置中填写 api_key / base_url');
 
-  const url = cfg.base_url.replace(/\/+$/, '') + '/chat/completions';
+  const up = buildUpstream(cfg, prompt, systemPrompt, temperature, true);
   const timeoutSignal = AbortSignal.timeout(180000); // 流式整体超时，防止连接半开挂起
-  const resp = await fetch(url, {
+  const resp = await fetch(up.url, {
     method: 'POST',
     signal: externalSignal ? AbortSignal.any([timeoutSignal, externalSignal]) : timeoutSignal,
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${cfg.api_key}`
     },
-    body: JSON.stringify({
-      model: cfg.model,
-      stream: true,
-      temperature: temperature ?? cfg.temperature ?? 0.8,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt }
-      ]
-    })
+    body: JSON.stringify(up.body)
   });
 
   if (!resp.ok) {
@@ -144,11 +297,13 @@ async function* _ls(prompt, systemPrompt, temperature, externalSignal) {
     throw new Error(`LLM HTTP ${resp.status}: ${body.slice(0, 300)}`);
   }
 
+  const isResponses = cfg.api_type === 'responses';
   const reader = resp.body.getReader();
   const decoder = new TextDecoder('utf-8');
   let buf = '';
 
-  // 解析上游 OpenAI SSE 格式：行以 "data: " 开头
+  // 解析上游 SSE 格式：行以 "data: " 开头
+  // chat_completions: choices[0].delta.content；responses: type=response.output_text.delta 的 delta 字段
   let upstreamDone = false;
   const parseBuf = function* () {
     let idx;
@@ -160,8 +315,14 @@ async function* _ls(prompt, systemPrompt, temperature, externalSignal) {
       if (payload === '[DONE]') { upstreamDone = true; return; }
       try {
         const json = JSON.parse(payload);
-        const delta = json?.choices?.[0]?.delta?.content;
-        if (delta) yield delta;
+        if (isResponses) {
+          const t = json?.type || '';
+          if (t === 'response.output_text.delta' && typeof json.delta === 'string') yield json.delta;
+          else if (t === 'response.completed' || t === 'response.failed' || t === 'response.incomplete') { upstreamDone = true; return; }
+        } else {
+          const delta = json?.choices?.[0]?.delta?.content;
+          if (delta) yield delta;
+        }
       } catch { /* 跳过不完整的行 */ }
     }
   };
@@ -278,13 +439,50 @@ function saveCustomPrompts(p) {
   fs.writeFileSync(PROMPTS_FILE, JSON.stringify(p, null, 2), 'utf-8');
 }
 
-// 组装最终 system prompt：基础(可被用户覆盖) + 无限制提示词(用户自填，默认空)
+// 酒馆宏 / STscript 清理（与前端导入逻辑一致的保守处理）
+function convertTavernMacros(text) {
+  return String(text)
+    .replace(/\{\{user\}\}/gi, '玩家')
+    .replace(/\{\{char\}\}/gi, '旁白')
+    .replace(/\{\{\s*setvar::[^:]+::([\s\S]*?)\}\}/gi, '$1')
+    .replace(/\{\{\s*getvar::[^}]*\}\}/gi, '')
+    .replace(/\{\{\s*trim\s*\}\}/gi, '')
+    .replace(/\{\{\s*\/\/[\s\S]*?\}\}/g, '');
+}
+
+// 拼接酒馆预设中启用的条目（按 prompt_order 顺序，跳过 marker 占位符）
+function composeTavernSection(preset) {
+  if (!preset || typeof preset !== 'object' || !Array.isArray(preset.prompts)) return '';
+  const byId = {};
+  for (const p of preset.prompts) if (p && p.identifier) byId[p.identifier] = p;
+  const order = preset.prompt_order && preset.prompt_order[0] && Array.isArray(preset.prompt_order[0].order)
+    ? preset.prompt_order[0].order : null;
+  const parts = [];
+  const seen = new Set();
+  const push = (p) => {
+    if (!p || p.marker || typeof p.content !== 'string') return;
+    const c = p.content.trim();
+    if (!c || seen.has(c)) return;
+    seen.add(c);
+    parts.push(convertTavernMacros(c));
+  };
+  if (order) {
+    for (const o of order) { if (o && o.enabled !== false) push(byId[o.identifier]); }
+  } else {
+    for (const p of preset.prompts) { if (p.enabled !== false) push(p); }
+  }
+  return parts.join('\n\n');
+}
+
+// 组装最终 system prompt：基础(可被用户覆盖) + 酒馆预设启用条目 + 无限制提示词(用户自填，默认空)
 function buildSystemPrompt() {
   const custom = loadCustomPrompts();
   const base = (custom.system_prompt && custom.system_prompt.trim())
     ? custom.system_prompt
     : DEFAULT_SYSTEM_PROMPT;
   let sys = base;
+  const tavern = composeTavernSection(custom.tavern_preset);
+  if (tavern) sys += '\n\n' + tavern;
   if (custom.unrestricted_prompt && custom.unrestricted_prompt.trim()) {
     sys += '\n\n' + custom.unrestricted_prompt.trim();
   }
@@ -307,10 +505,18 @@ app.get('/api/prompts/custom', (req, res) => {
 });
 
 app.post('/api/prompts/custom', (req, res) => {
-  const { system_prompt, unrestricted_prompt } = req.body || {};
+  const { system_prompt, unrestricted_prompt, tavern_preset } = req.body || {};
   const p = loadCustomPrompts();
   if (typeof system_prompt === 'string') p.system_prompt = system_prompt;
   if (typeof unrestricted_prompt === 'string') p.unrestricted_prompt = unrestricted_prompt;
+  if (tavern_preset === null) delete p.tavern_preset;
+  else if (tavern_preset && typeof tavern_preset === 'object' && !Array.isArray(tavern_preset)) {
+    // 体积保护：单个预设不超过 1MB
+    if (JSON.stringify(tavern_preset).length > 1024 * 1024) {
+      return res.status(413).json({ success: false, error: '预设过大（>1MB）' });
+    }
+    p.tavern_preset = tavern_preset;
+  }
   try {
     saveCustomPrompts(p);
     res.json({ success: true, prompts: p });
