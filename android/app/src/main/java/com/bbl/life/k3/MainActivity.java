@@ -1,4 +1,4 @@
-﻿package com.bbl.life.k3;
+package com.bbl.life.k3;
 
 import com.getcapacitor.BridgeActivity;
 
