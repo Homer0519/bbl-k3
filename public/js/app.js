@@ -142,6 +142,8 @@ async function startGame(profile) {
   BBL.ui.clearChoices();
   BBL.app.lastSnapshotId = null;
   BBL.app.pendingAction = null;
+  BBL.app.pendingIntro = false;
+  BBL.app.pendingProfile = null;
   BBL.app.trialNext = null;
   BBL.app.busy = false;
   BBL.app.turnToken++;    // 使上一局进行中的异步回调全部失效
@@ -183,7 +185,17 @@ function trialIntro(profile) {
 async function llmIntro(profile) {
   BBL.app.busy = true;
   const token = ++BBL.app.turnToken;
+
+  // 开局前拍快照（初始状态），使"重生成"可重 roll 开局
+  try {
+    const snap = await BBL.takeSnapshot(BBL.app.state, '开局');
+    BBL.app.lastSnapshotId = snap.success ? snap.id : null;
+  } catch { BBL.app.lastSnapshotId = null; }
+  BBL.app.pendingProfile = profile;
+  BBL.app.pendingIntro = true;
+
   BBL.ui.showThinking('球探正在撰写你的开局…');
+  let stream = null;
   try {
     const tpl = BBL.llm.templates?.game_intro || '';
     const worldbook = await BBL.worldbook.formatForPrompt(BBL.app.state, '');
@@ -193,16 +205,22 @@ async function llmIntro(profile) {
       stage: profile.stage,
       worldbook
     });
-    const full = await BBL.llm._ll(prompt, systemPrompt);
+    stream = BBL.ui.createStream();
+    let firstDelta = false;
+    const full = await BBL.llm._ls(prompt, systemPrompt, (delta) => {
+      if (!firstDelta) { firstDelta = true; BBL.ui.hideThinking(); } // 首字节到达才隐藏思考标识
+      stream.add(delta);
+    });
     BBL.ui.hideThinking();
     if (token !== BBL.app.turnToken) return; // 期间被打断
-    await processLLMOutput(full, null, { typewrite: true });
+    stream.end();
+    await processLLMOutput(full, null);
   } catch (e) {
+    if (stream) stream.end('error');
     BBL.ui.hideThinking();
     if (token !== BBL.app.turnToken) return;
-    BBL.ui.toast('LLM 开局失败，已切换试玩模式：' + e.message, 4000);
-    BBL.app.mode = 'trial';
-    trialIntro(profile);
+    BBL.ui.toast('开局生成失败：' + e.message + '（可点击"重生成"重试）', 4000);
+    BBL.ui.renderChoices([], () => {});
   } finally {
     BBL.app.busy = false;
   }
@@ -240,6 +258,7 @@ async function handleTurn(action, choiceIdx) {
   }
   BBL.app.pendingAction = action;
   BBL.app.pendingChoiceIdx = (typeof choiceIdx === 'number') ? choiceIdx : null;
+  BBL.app.pendingIntro = false; // 进入正常回合后不再是"开局"阶段
 
   if (BBL.app.mode === 'llm') {
     await llmTurn(action);
@@ -268,8 +287,11 @@ async function llmTurn(action) {
     });
 
     stream = BBL.ui.createStream();
-    BBL.ui.hideThinking();
-    const full = await BBL.llm._ls(prompt, systemPrompt, (delta) => stream.add(delta));
+    let firstDelta = false;
+    const full = await BBL.llm._ls(prompt, systemPrompt, (delta) => {
+      if (!firstDelta) { firstDelta = true; BBL.ui.hideThinking(); } // 首字节到达才隐藏思考标识
+      stream.add(delta);
+    });
     if (token !== BBL.app.turnToken) return; // 期间被读档/新开局/回退打断
     stream.end();
     await processLLMOutput(full, action);
@@ -394,6 +416,13 @@ async function regenerate() {
   const restored = await restoreLastSnapshot();
   if (!restored) return;
   BBL.ui.hideModal();
+  // 开局阶段的重 roll：恢复初始快照后重新流式生成开局
+  if (BBL.app.pendingIntro && BBL.app.pendingProfile) {
+    BBL.app.lastSnapshotId = null;
+    BBL.app.pendingIntro = false; // llmIntro 会重新拍快照并置位
+    await llmIntro(BBL.app.pendingProfile);
+    return;
+  }
   const action = BBL.app.pendingAction;
   // 恢复快照后 state 回到行动前；重放时带上原选项序号，保证试玩模式走同一剧情分支
   if (action) {
@@ -418,6 +447,7 @@ async function restoreSnapshotById(id) {
   BBL.app.state = snap.data;
   BBL.app.lastSnapshotId = null;
   BBL.app.pendingAction = null;
+  BBL.app.pendingIntro = false;
   BBL.ui.clearNarrative();
   BBL.ui.clearChoices();
   // 回放最近几段叙事
@@ -490,6 +520,7 @@ async function loadSlot(slot) {
   BBL.app.state = data.game_state;
   BBL.app.lastSnapshotId = null;
   BBL.app.pendingAction = null;
+  BBL.app.pendingIntro = false;
   BBL.ui.clearNarrative();
   BBL.ui.clearChoices();
   const hist = (BBL.app.state.narrativeHistory || []).slice(-3);
