@@ -138,24 +138,19 @@ html, body {
   margin-bottom: 30px;
 }
 
-/* 篮球线稿 */
+/* 篮球 logo（SVG） */
 .title-logo {
-  position: relative;
-  width: 68px;
-  height: 68px;
+  width: 74px;
+  height: 74px;
   margin: 0 auto 26px;
-  border: 2px solid var(--accent);
-  border-radius: 50%;
+  filter: drop-shadow(0 6px 14px rgba(224, 90, 30, 0.3));
+  animation: ball-in 0.9s cubic-bezier(0.34, 1.4, 0.64, 1) both;
 }
-.title-logo::before, .title-logo::after {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  border: 2px solid transparent;
-  border-radius: 50%;
+.title-logo svg { width: 100%; height: 100%; display: block; }
+@keyframes ball-in {
+  from { transform: translateY(-26px) rotate(-120deg) scale(0.6); opacity: 0; }
+  to { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
 }
-.title-logo::before { border-left-color: var(--accent); transform: rotate(45deg) scaleX(0.6); }
-.title-logo::after { border-right-color: var(--accent); transform: rotate(45deg) scaleX(0.6); }
 
 .title-name {
   font-family: var(--serif);
@@ -429,6 +424,32 @@ textarea { font-size: 14px; line-height: 1.7; }
 }
 #choices-area { display: flex; flex-direction: column; margin-bottom: 12px; }
 #choices-area:empty { margin-bottom: 0; }
+
+/* 选项折叠开关 */
+#choices-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 0 10px;
+  margin-bottom: 2px;
+  background: none;
+  border: none;
+  border-bottom: 1px dashed var(--line);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--faint);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+#choices-toggle:hover { color: var(--accent); }
+#choices-toggle .ct-chev { display: inline-block; transition: transform 0.2s ease; }
+#action-bar.collapsed #choices-toggle .ct-chev { transform: rotate(-180deg); }
+#action-bar.collapsed #choices-area { display: none; }
+#action-bar.collapsed #choices-toggle { border-bottom: none; padding-bottom: 4px; margin-bottom: 8px; }
+#choices-area { margin-top: 8px; }
 
 .choice-btn {
   display: flex;
@@ -757,3 +778,31 @@ textarea { font-size: 14px; line-height: 1.7; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(28, 26, 21, 0.18); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ---------- 细节动效优化 ---------- */
+/* 叙事块入场 */
+.narrative-block { animation: nb-in 0.4s ease both; }
+@keyframes nb-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 按钮微浮反馈 */
+.btn { transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease; }
+.btn:not(:disabled):hover { transform: translateY(-1px); }
+.btn:not(:disabled):active { transform: translateY(0); }
+
+/* 选项依次浮现 */
+.choice-btn { animation: ch-in 0.3s ease both; }
+.choice-btn:nth-child(2) { animation-delay: 0.05s; }
+.choice-btn:nth-child(3) { animation-delay: 0.1s; }
+.choice-btn:nth-child(4) { animation-delay: 0.15s; }
+.choice-btn:nth-child(n+5) { animation-delay: 0.2s; }
+@keyframes ch-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .narrative-block, .choice-btn, .title-logo { animation: none; }
+}

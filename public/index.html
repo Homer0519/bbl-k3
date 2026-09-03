@@ -17,7 +17,18 @@
           <span class="title-issue">VOL.01 · CAREER MODE</span>
           <span class="title-issue">LLM NARRATIVE</span>
         </div>
-        <div class="title-logo" aria-hidden="true"><i></i><i></i></div>
+        <div class="title-logo" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="32" cy="32" r="29" fill="var(--accent)"/>
+            <g stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round">
+              <circle cx="32" cy="32" r="29"/>
+              <path d="M32 3v58"/>
+              <path d="M3 32h58"/>
+              <path d="M23.5 4.5C9 17 9 47 23.5 59.5"/>
+              <path d="M40.5 4.5C55 17 55 47 40.5 59.5"/>
+            </g>
+          </svg>
+        </div>
         <h1 class="title-name">篮球人生</h1>
         <p class="title-en">A BASKETBALL LIFE, WRITTEN BY AI</p>
         <p class="title-sub">从无名之辈到世界之巅 —— 你的每一次选择，<br>都由大语言模型书写成独一无二的职业生涯。</p>
@@ -94,6 +105,10 @@
       </div>
 
       <footer id="action-bar">
+        <button id="choices-toggle" class="hidden" aria-expanded="true">
+          <span class="ct-label">选项</span>
+          <span class="ct-chev">▾</span>
+        </button>
         <div id="choices-area"></div>
         <div class="free-input-row">
           <input id="free-input" type="text" placeholder="或自由输入你的行动…" maxlength="200">
@@ -260,6 +275,17 @@
       if (backdrop) backdrop.addEventListener('click', function () {
         sidebar.classList.remove('open');
         backdrop.classList.remove('show');
+      });
+    })();
+
+    // 选项面板折叠开关（纯展示层）
+    (function () {
+      var bar = document.getElementById('action-bar');
+      var tg = document.getElementById('choices-toggle');
+      if (!bar || !tg) return;
+      tg.addEventListener('click', function () {
+        var collapsed = bar.classList.toggle('collapsed');
+        tg.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
       });
     })();
   </script>

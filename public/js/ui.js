@@ -120,7 +120,14 @@ BBL.ui.renderChoices = function(choices, onChoose) {
   BBL.ui.$('#free-input').disabled = false;
   BBL.ui.$('#btn-send').disabled = false;
 
-  if (!choices || choices.length === 0) return;
+  const bar = BBL.ui.$('#action-bar');
+  const tg = BBL.ui.$('#choices-toggle');
+
+  if (!choices || choices.length === 0) {
+    if (tg) tg.classList.add('hidden');
+    if (bar) bar.classList.remove('collapsed');
+    return;
+  }
   choices.forEach((c, i) => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
@@ -129,12 +136,24 @@ BBL.ui.renderChoices = function(choices, onChoose) {
     btn.onclick = () => onChoose(c, i);
     area.appendChild(btn);
   });
+  // 新一轮选项：更新计数并自动展开
+  if (tg) {
+    tg.classList.remove('hidden');
+    tg.setAttribute('aria-expanded', 'true');
+    const label = tg.querySelector('.ct-label');
+    if (label) label.textContent = `选项 · ${choices.length}`;
+  }
+  if (bar) bar.classList.remove('collapsed');
 };
 
 BBL.ui.clearChoices = function() {
   BBL.ui.$('#choices-area').innerHTML = '';
   BBL.ui.$('#free-input').disabled = true;
   BBL.ui.$('#btn-send').disabled = true;
+  const tg = BBL.ui.$('#choices-toggle');
+  if (tg) tg.classList.add('hidden');
+  const bar = BBL.ui.$('#action-bar');
+  if (bar) bar.classList.remove('collapsed');
 };
 
 // 流式生成中显示加载指示
